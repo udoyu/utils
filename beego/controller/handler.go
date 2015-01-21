@@ -4,28 +4,32 @@ import (
 )
 
 type ControllerFunc func(ctl beego.ControllerInterface)
-type ControllerHandler map[string]ControllerFunc
+type ControllerHandlerMap map[string]ControllerFunc
 
-type ControllerClientInterface interface{
-    func AddHandler(path string, h ControllerFunc)
-    func DelHandler(path string)
-    func Handler(beego.ControllerClientInterface)
+type ControllerHandlerInterface interface{
+    func Add(path string, h ControllerFunc)
+    func Delete(path string)
+    func Default(beego.ControllerInterface)
+    func Do(beego.ControllerHandlerInterface)
 }
 
-type ControllerClient struct {
-    HandlerFunc ControllerHandler
+type ControllerHandler struct {
+    HandlerFunc ControllerHandlerMap
 }
-
-type (this *ControllerClient)AddHandler(path string, h ControllerFunc) {
+type (this *ControllerHandler) Add(path string, h ControllerFunc) {
     this.HandlerFunc[path] = h
 }
-type (this *ControllerClient)Handler(ctl beego.ControllerInterface) {
+func (this *ControllerHandler) Delete(path string) {
+    delete(this.HandlerFunc, path)
+}
+func (this *ControllerHandler) Do(ctl beego.ControllerInterface) {
     if h,ok := this.HandlerFunc[ctl.Ctx.Input.Url()]
     if ok {
         h(ctl)
+    } else {
+        this.Default(ctl)
     }
 }
-func (this *ControllerClient)DelHandler(path string) {
-    delete(this.HandlerFunc, path)
+func (this *ControllerHandler) Default(ctl beego.ControllerInterface) {
+    ctl.Ctx.WriteString("")
 }
-
