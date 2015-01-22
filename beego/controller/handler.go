@@ -9,8 +9,8 @@ type ControllerHandlerMap map[string]ControllerFunc
 type ControllerHandlerInterface interface{
     func Add(path string, h ControllerFunc)
     func Delete(path string)
-    func Default(beego.ControllerInterface)
-    func Do(beego.ControllerHandlerInterface)
+    func Default(v beego.ControllerInterface)
+    func Do(path string, v beego.ControllerHandlerInterface)
 }
 
 type ControllerHandler struct {
@@ -22,8 +22,8 @@ type (this *ControllerHandler) Add(path string, h ControllerFunc) {
 func (this *ControllerHandler) Delete(path string) {
     delete(this.HandlerFunc, path)
 }
-func (this *ControllerHandler) Do(ctl beego.ControllerInterface) {
-    if h,ok := this.HandlerFunc[ctl.Ctx.Input.Url()]
+func (this *ControllerHandler) Do(path string, ctl beego.ControllerInterface) {
+    if h,ok := this.HandlerFunc[path]
     if ok {
         h(ctl)
     } else {
