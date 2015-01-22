@@ -14,6 +14,7 @@ func NewUuid() string {
     rand.Seed(nano)
     rndNum := rand.Int63()
     sessionId := Md5(Md5(strconv.FormatInt(nano, 10))+Md5(strconv.FormatInt(rndNum, 10)))
+    return sessionId
 }
 
 func Md5(text string) string {
