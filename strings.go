@@ -15,16 +15,24 @@ func StringIndexAny(s, cutset string, n int) int {
     return r-1
 }
 
-func StringCutLeft(s string, offset int) string {
+func StringCutRight(s string, offset int) string {
     if offset < 0 || offset > len(s) {
         return s
     }
     return s[:offset]
 }
 
-func StringCutRight(s string, offset int) string {
+func StringCutLeft(s string, offset int) string {
      if offset < 0 || offset > len(s) {
         return ""
     }
     return s[offset:]
+}
+
+func StringCutRightExp(s string, cutset string, n int) string {
+    return StringCutRight(s, StringIndexAny(s, cutset, n))
+}
+
+func StringCutLeftExp(s string, cutset string, n int) string {
+    return StringCutLeft(s, StringIndexAny(s, cutset, n)+1)
 }
