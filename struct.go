@@ -30,7 +30,7 @@ func StructTravelFunc (v reflect.Value, t reflect.StructField, qi QueryInterface
        if v.Kind() == reflect.Ptr {
            v = v.Elem()
            if v.Kind() == reflect.Struct {
-               StructTravel(v, qi, StructTravelFunc)
+               //StructTravel(v, qi, StructTravelFunc)
            } else if str:=qi.Query(t); len(str)!=0 && v.CanSet() {
                //form := utils.StringCutRightExp(t.Tag.Get("json"), ",", 1)
                switch v.Kind() {
