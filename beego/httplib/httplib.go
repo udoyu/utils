@@ -18,13 +18,18 @@ func Transmit(trans_url string, r *http.Request, w http.ResponseWriter) (*BeegoH
         case "DELETE" : b = Delete(urlString)
         case "HEAD" : b = Head(urlString)
     }
-    if r.Form == nil {
-        r.ParseForm()
+    
+    if r.Body != nil {
+        b.Request().Body = r.Body
     }
-    for k, v := range r.Form {
-        b.Param(k, v[0])
-    }
+
+    if r.PostForm != nil {
+        for k, v := range r.PostForm {
+            b.Param(k, v[0])
+        }
+    } 
     b.Request().Header = r.Header
+    
     err := b.Do()
     if err == nil {
         header := b.Response().Header
