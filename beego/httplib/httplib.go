@@ -4,7 +4,7 @@ import (
     "net/http" 
 )
 
-func Transmit(trans_url string, r *http.Request) (*BeegoHttpRequest, error) {
+func Transmit(trans_url string, r *http.Request, w http.ResponseWriter) (*BeegoHttpRequest, error) {
     var b *BeegoHttpRequest
     urlString := trans_url
     if len(r.URL.RawQuery) != 0 {
@@ -27,7 +27,12 @@ func Transmit(trans_url string, r *http.Request) (*BeegoHttpRequest, error) {
     b.Request().Header = r.Header
     err := b.Do()
     if err == nil {
-        r.Header = b.Request().Header
+        header := b.Response().Header
+        for k,v := range header {
+            for _,s := range v {
+                w.Header().Add(k, s)
+            }
+        }
     }
     return b, err
 }
