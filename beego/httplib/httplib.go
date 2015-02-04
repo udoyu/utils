@@ -2,22 +2,21 @@ package httplib
 
 import (
     "net/http" 
-    "github.com/astaxie/beego/httplib" 
 )
 
-func Transmit(method, trans_url string, r *http.Request) (*httplib.BeegoHttpRequest, error) {
-    var b *httplib.BeegoHttpRequest
+func Transmit(trans_url string, r *http.Request) (*BeegoHttpRequest, error) {
+    var b *BeegoHttpRequest
     urlString := trans_url
     if len(r.URL.RawQuery) != 0 {
         urlString += "?" + r.URL.RawQuery
     }
     
-    switch method {
-        case "GET" : b = httplib.Get(urlString)
-        case "POST" : b = httplib.Post(urlString)
-        case "PUT" : b = httplib.Put(urlString)
-        case "DELETE" : b = httplib.Delete(urlString)
-        case "HEAD" : b = httplib.Head(urlString)
+    switch r.Method {
+        case "GET" : b = Get(urlString)
+        case "POST" : b = Post(urlString)
+        case "PUT" : b = Put(urlString)
+        case "DELETE" : b = Delete(urlString)
+        case "HEAD" : b = Head(urlString)
     }
     if r.Form == nil {
         r.ParseForm()
@@ -25,14 +24,10 @@ func Transmit(method, trans_url string, r *http.Request) (*httplib.BeegoHttpRequ
     for k, v := range r.Form {
         b.Param(k, v[0])
     }
-    for k,v := range r.Header{
-            for _, s := range v {
-                b.Header(k, s)
-            }
-    }
-    resp, err := b.Response()
+    b.Request().Header = r.Header
+    err := b.Do()
     if err == nil {
-        r.Header = resp.Header
+        r.Header = b.Request().Header
     }
     return b, err
 }
