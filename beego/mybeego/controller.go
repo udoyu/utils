@@ -52,8 +52,10 @@ func (this *Controller) Transmit(url string) (*httplib.BeegoHttpRequest, error) 
 	    }
     }
     err := b.Do()
-    if err == nil {
-	this.SetSession("trans_session", b.Response().Cookies())
+    cookies := b.Response().Cookies()
+    if len(cookies) > 0{
+	this.SetSession("trans_session", cookies)
     }
     return b, err
+
 }
