@@ -11,6 +11,8 @@ type ThriftSt struct {
 	tsocket          *thrift.TSocket
 	ttransport       thrift.TTransport
 	tprotocolFactory thrift.TProtocolFactory
+	addr             string
+	port             string
 }
 
 func (this *ThriftSt) TTransport() thrift.TTransport {
@@ -34,7 +36,18 @@ func NewThriftSt(addr, port string) (*ThriftSt, error) {
 	p.tsocket = tsocket
 	p.tprotocolFactory = tprotocolFactory
 	p.ttransport = ttransport
+	p.addr = addr
+	p.port = port
 	return p, err
+}
+
+func (this *ThriftSt) Reset() (err error) {
+	this.Close()
+	this, err = NewThriftSt(this.addr, this.port)
+	if err == nil {
+		err = this.Open()
+	}
+	return err
 }
 
 func (this *ThriftSt) Start() error {
@@ -48,10 +61,10 @@ func (this *ThriftSt) Start() error {
 func (this *ThriftSt) Open() error {
 	//client = user.NewUserServiceClientFactory(clientTransport, protocolFactory)
 	err := this.tsocket.Open()
-        if err != nil {
-            fmt.Println(err.Error())
-        }
-        return err
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return err
 }
 
 func (this *ThriftSt) Close() {
