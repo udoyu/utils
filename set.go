@@ -6,7 +6,7 @@ type SetInterface interface {
 	Insert(v interface{})
 	Has(v interface{}) bool
 	Remove(v interface{})
-	Range(callback SetCallback)
+	Range(callback SetCallback, vs ...interface{})
 	Size() int
 	ToSlice() []interface{}
 }

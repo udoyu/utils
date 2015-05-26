@@ -36,10 +36,10 @@ func (this *SafeSet) Remove(v interface{}) {
 	this.lock.Unlock()
 }
 
-func (this *SafeSet) Range(callback SetCallback) {
+func (this *SafeSet) Range(callback SetCallback, vs ...interface{}) {
 	this.lock.RLock()
-	this.set.Range(callback)
-	this.lock.RUnlock()
+	defer this.lock.RUnlock()
+	this.set.Range(callback, vs)
 }
 
 func (this *SafeSet) Size() int {
