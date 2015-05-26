@@ -3,7 +3,7 @@ package simsql
 import (
 	"database/sql"
 	"fmt"
-	_ "mysql-master"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type SimSql struct {

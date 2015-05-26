@@ -11,7 +11,7 @@ type Pool struct {
 }
 
 func (this *Pool) Get() interface{} {
-    v = this.pool.Get()
+    v := this.pool.Get()
     if v != nil {
         atomic.AddInt64(&this.size, int64(-1))
     }

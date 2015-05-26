@@ -4,7 +4,7 @@ import (
 //        "fmt"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/session"
-        "github.com/xiying/xytool/simini"
+     "github.com/udoyu/utils/simini"
 	//"github.com/astaxie/beego/context"
 )
 

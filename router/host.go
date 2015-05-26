@@ -5,13 +5,13 @@ import (
 )
 
 type HostInterface interface {
-    func GetObj() interface{}
-    func PutObj(v interface{}) 
-    func Init()
-    func Status() bool
-    func ChangeStatus()
-    func Size() int64
-    func Empty() bool
+    GetObj() interface{}
+    PutObj(v interface{}) 
+    Init()
+    Status() bool
+    ChangeStatus()
+    Size() int64
+    Empty() bool
 }
 
 type Host struct {
@@ -29,11 +29,11 @@ func (this *Host) GetObj() interface{} {
 }
 
 func (this *Host) PubObj(obj interface{}) {
-    this.pool.Pub(obj)
+    this.pool.Put(obj)
 }
 
 func (this *Host) Init() {
-    this.pool = new(Pool)
+    this.pool = new(sync.Pool)
     this.StatusParam = NewLockParam(false) 
 }
 
@@ -42,7 +42,7 @@ func (this *Host) Status() bool {
 }
 
 func (this *Host) ChangeStatus() {
-    return this.StatusParam.SetValue(!this.Status())
+    this.StatusParam.SetValue(!this.Status())
 }
 
 func NewHostGroup() *HostGroup {
@@ -51,15 +51,14 @@ func NewHostGroup() *HostGroup {
 }
 
 func (this *HostGroup) AddHost(v HostInterface) {
-    this.rw_lock.WLock()
-    defer this.rw_lock.WUnlock()
-    hosts = append(this.Hosts, v)
-    this.Hosts = hosts
+    this.rw_lock.Lock()
+    defer this.rw_lock.Unlock()
+    this.Hosts = append(this.Hosts, v)
 }
 
 func (this *HostGroup) GetHost() HostInterface {
     this.rw_lock.RLock()
-    defer this.rw_lock.RUnock()
+    defer this.rw_lock.RUnlock()
     for _,h := range this.Hosts {
         if h.Status() && !h.Empty() {
             return h

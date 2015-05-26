@@ -1,15 +1,15 @@
 package router
 import (
-    "sync"
+
 )
 
-type RouterInterface {
-    func GetObj(rtype string, index int) interface{}
-    func Init(v interface{}) int
+type RouterInterface interface {
+    GetObj(rtype string, index int) interface{}
+    Init(v interface{}) int
 }
 
 //map[rtype]index[*hosts]
-type HostGroupIndexMap map[int][*HostGroup]
+type HostGroupIndexMap map[int]*HostGroup
 type HostGroupTypeIndexMap map[string]HostGroupIndexMap
 
 type Router struct {

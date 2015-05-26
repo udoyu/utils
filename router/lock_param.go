@@ -20,9 +20,9 @@ func (this *LockParam) Value() interface{} {
     return this.v
 }
 
-func (this *LockParam) SetValue(v interface{}) interface{} {
-    this.rw_lock.WLock()
-    defer this.rw_lock.WUnlock()
+func (this *LockParam) SetValue(v interface{}) {
+    this.rw_lock.Lock()
+    defer this.rw_lock.Unlock()
     this.v = v
 }
 
