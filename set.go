@@ -37,7 +37,7 @@ func (this *Set) Remove(v interface{}) {
 
 func (this *Set) Range (callback SetCallback, vs ...interface{}) {
 	for k,_ := range this.v {
-		callback(k, vs)
+		callback(k, vs...)
 	}
 }
 
