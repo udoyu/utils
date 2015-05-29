@@ -38,11 +38,16 @@ func (p *SimIni) LoadFile(filename string) int {
 		if io.EOF == err {
 			break
 		}
+
 		line = strings.TrimLeft(line, " ")
 		if 0 == len(line) || '#' == line[0] {
 			continue
 		}
 		length := len(line)
+		if line[length-2] == '\r' {
+			length -= 1
+			line = line[:length]
+		}
 		if '[' == line[0] && ']' == line[length-2] {
 			curkey = line[1 : length-2]
 			p.sess_map_[curkey] = make(StrMap)
