@@ -91,8 +91,8 @@ func TEADecrypt(crypt []byte, key []uint32) (plain []byte, err error) {
 
 	padLentgh := int(tplain_buf[0] & 0x07)
 	plain_len = crypt_len - (padLentgh + 3) - 7
-	plain = make([]byte, 1024)
-	copy(plain[:], tplain_buf[(padLentgh+3):(length+(padLentgh+3))])
+	plain = make([]byte, plain_len)
+	copy(plain[:], tplain_buf[(padLentgh+3):])
 	plain = plain[:plain_len]
 	return plain, err
 }
@@ -140,7 +140,6 @@ func TEAEncrypt(plain []byte, key []uint32) (crypt []byte, err error) {
 		copy(pre_crypt[:], tcrypt[i:i+2])
 		copy(pre_plain[:], p_buf[:2])
 	}
-	fmt.Println(tcrypt)
 	buf = new(bytes.Buffer)
 	binary.Write(buf, binary.LittleEndian, tcrypt[:])
 	tcrypt_buf = buf.Bytes()
