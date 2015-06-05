@@ -138,15 +138,15 @@ type BeegoHttpRequest struct {
 //execut the request
 func (b *BeegoHttpRequest) Do() error {
 	_, err := b.getResponse()
-        return err
+	return err
 }
 
 func (b *BeegoHttpRequest) Request() *http.Request {
-        return b.req
+	return b.req
 }
 
 func (b *BeegoHttpRequest) Response() *http.Response {
-        return b.resp
+	return b.resp
 }
 
 // Change request settings

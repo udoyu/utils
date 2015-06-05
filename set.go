@@ -11,19 +11,19 @@ type SetInterface interface {
 	ToSlice() []interface{}
 }
 
-type Set struct{
+type Set struct {
 	v map[interface{}]struct{}
 }
 
 func NewSet() *Set {
-	s := &Set {
-		v:make(map[interface{}]struct{}),
+	s := &Set{
+		v: make(map[interface{}]struct{}),
 	}
 	return s
 }
 
 func (this *Set) Insert(v interface{}) {
-	this.v[v]=struct{}{}
+	this.v[v] = struct{}{}
 }
 
 func (this *Set) Has(v interface{}) bool {
@@ -35,8 +35,8 @@ func (this *Set) Remove(v interface{}) {
 	delete(this.v, v)
 }
 
-func (this *Set) Range (callback SetCallback, vs ...interface{}) {
-	for k,_ := range this.v {
+func (this *Set) Range(callback SetCallback, vs ...interface{}) {
+	for k, _ := range this.v {
 		callback(k, vs...)
 	}
 }

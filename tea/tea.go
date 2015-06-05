@@ -21,7 +21,7 @@ func NewTea(key []uint32) *Tea {
 func NewTeaFromBytes(key []byte) *Tea {
 	if len(key) > 16 {
 		key = key[:16]
-	}else if len(key) < 16 {
+	} else if len(key) < 16 {
 		buf := make([]byte, 16)
 		copy(buf[:], key[:])
 		key = buf
@@ -33,19 +33,19 @@ func NewTeaFromBytes(key []byte) *Tea {
 	return t
 }
 
-func (this *Tea) Encrypt(plain []byte)(crypt []byte, err error) {
+func (this *Tea) Encrypt(plain []byte) (crypt []byte, err error) {
 	return TEAEncrypt(plain, this.key)
 }
 
-func (this *Tea) Decrypt(crypt []byte)(plain []byte, err error) {
+func (this *Tea) Decrypt(crypt []byte) (plain []byte, err error) {
 	return TEADecrypt(crypt, this.key)
 }
 
-func (this *Tea) EncryptWrapper(plain []byte)(crypt []byte, err error) {
+func (this *Tea) EncryptWrapper(plain []byte) (crypt []byte, err error) {
 	return TEAEncryptWrapper(plain, this.key)
 }
 
-func (this *Tea) DecryptWrapper(crypt []byte)(plain []byte, err error) {
+func (this *Tea) DecryptWrapper(crypt []byte) (plain []byte, err error) {
 	return TEADecryptWrapper(crypt, this.key)
 }
 
@@ -182,7 +182,6 @@ func TEAEncryptWrapper(plain []byte, key []uint32) (crypt []byte, err error) {
 	crypt = real_crypt[:]
 	return crypt, err
 }
-
 
 func HexCharToInt(c byte) int {
 	if c <= '9' && c >= '0' {

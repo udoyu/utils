@@ -5,14 +5,14 @@ import (
 )
 
 type SafeSet struct {
-	set *Set
+	set  *Set
 	lock *sync.RWMutex
 }
 
 func NewSafeSet() *SafeSet {
 	s := &SafeSet{
-		set : NewSet(),
-		lock : new(sync.RWMutex),
+		set:  NewSet(),
+		lock: new(sync.RWMutex),
 	}
 	return s
 }
