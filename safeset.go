@@ -54,3 +54,8 @@ func (this *SafeSet) ToSlice() []interface{} {
 	defer this.lock.RUnlock()
 	return this.set.ToSlice()
 }
+
+func (this *SafeSet) Wake() {
+	this.lock.Lock()
+	this.lock.Unlock()
+}

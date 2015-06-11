@@ -9,6 +9,7 @@ type SetInterface interface {
 	Range(callback SetCallback, vs ...interface{})
 	Size() int
 	ToSlice() []interface{}
+	Wake()	//防止读锁一直占用，而写锁被卡住
 }
 
 type Set struct {
@@ -51,4 +52,8 @@ func (this *Set) ToSlice() []interface{} {
 		arr = append(arr, k)
 	}
 	return arr
+}
+
+func (this *Set) Wake() {
+	
 }
