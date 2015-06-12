@@ -62,42 +62,42 @@ func logPrintf(format string, v ...int) {
 }
 
 // Trace logs a message at trace level.
-func LogTrace(format string) {
+func Trace(format string) {
 	if level <= LevelTrace {
 		SimLogger.Printf("[T]" + format)
 	}
 }
 
 // Debug logs a message at debug level.
-func LogDebug(format string, skips ...int) {
+func Debug(format string, skips ...int) {
 	if level <= LevelDebug {
 		logPrintf("[D]"+format, skips...)
 	}
 }
 
 // Info logs a message at info level.
-func LogInfo(format string, skips ...int) {
+func Info(format string, skips ...int) {
 	if level <= LevelInfo {
 		logPrintf("[I]"+format, skips...)
 	}
 }
 
 // Warning logs a message at warning level.
-func LogWarn(format string, skips ...int) {
+func Warn(format string, skips ...int) {
 	if level <= LevelWarning {
 		logPrintf("[W]"+format, skips...)
 	}
 }
 
 // Error logs a message at error level.
-func LogError(format string, skips ...int) {
+func Error(format string, skips ...int) {
 	if level <= LevelError {
 		logPrintf("[E]"+format, skips...)
 	}
 }
 
 // Critical logs a message at critical level.
-func LogCritical(format string, skips ...int) {
+func Critical(format string, skips ...int) {
 	if level <= LevelCritical {
 		logPrintf("[C]"+format, skips...)
 	}
