@@ -60,42 +60,42 @@ func Close() {
 }
 
 func Trace(v ...interface{}) {
-	if level < LevelTrace {
+	if level <= LevelTrace {
 		logSplitFunc()
 		SimLogger.Output(3, fmt.Sprint(v...))
 	}
 }
 
 func Debug(v ...interface{}) {
-	if level < LevelDebug {
+	if level <= LevelDebug {
 		logSplitFunc()
 		SimLogger.Output(3, fmt.Sprint(v...))
 	}
 }
 
 func Info(v ...interface{}) {
-	if level < LevelInfo {
+	if level <= LevelInfo {
 		logSplitFunc()
 		SimLogger.Output(3, fmt.Sprint(v...))
 	}
 }
 
 func Warn(v ...interface{}) {
-	if level < LevelWarning {
+	if level <= LevelWarning {
 		logSplitFunc()
 		SimLogger.Output(3, fmt.Sprint(v...))
 	}
 }
 
 func Error(v ...interface{}) {
-	if level < LevelError {
+	if level <= LevelError {
 		logSplitFunc()
 		SimLogger.Output(3, fmt.Sprint(v...))
 	}
 }
 
 func Critical(v ...interface{}) {
-	if level < LevelCritical {
+	if level <= LevelCritical {
 		logSplitFunc()
 		SimLogger.Output(3, fmt.Sprint(v...))
 	}
