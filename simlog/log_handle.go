@@ -61,7 +61,7 @@ func GetLogName(path string) string {
 	return filename
 }
 
-func LogInit(path string, maxsize, maxindex, maxday, loglevel int) {
+func logInit(path string, maxsize, maxindex, maxday, loglevel int) {
 	logfilelock = new(sync.Mutex)
 	logfilelock.Lock()
 	defer logfilelock.Unlock()
@@ -92,7 +92,7 @@ func LogInit(path string, maxsize, maxindex, maxday, loglevel int) {
 	go changelogdate()
 }
 
-func LogClose() {
+func logClose() {
 	if nil != logfile {
 		logfile.Close()
 	}
