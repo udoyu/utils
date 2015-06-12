@@ -40,9 +40,10 @@ func (p *SimIni) LoadFile(filename string) int {
 		}
 
 		line = strings.TrimLeft(line, " ")
-		if 0 == len(line) || '#' == line[0] {
+		if len(line) < 2 || '#' == line[0] || '\n' == line[0] || '\r' == line[0] {
 			continue
 		}
+		
 		length := len(line)
 		if line[length-2] == '\r' {
 			length -= 1
@@ -92,10 +93,15 @@ func (p *SimIni) LoadFileExtern(filename string) int {
 			break
 		}
 		line = strings.TrimLeft(line, " ")
-		if 0 == len(line) || '#' == line[0] || '\n' == line[0] {
+		if len(line) < 2 || '#' == line[0] || '\n' == line[0] || '\r' == line[0] {
 			continue
 		}
+		
 		length := len(line)
+		if line[length-2] == '\r' {
+			length -= 1
+			line = line[:length]
+		}
 		if '[' == line[0] && ']' == line[length-2] {
 			curkey = line[1 : length-2]
 			p.sess_map_[curkey] = make(StrMap)
