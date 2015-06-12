@@ -37,15 +37,22 @@ func SetLogLevel(l int) {
 
 // logger references the used application logger.
 //var NettaoLogger = log.New(os.Stdout, "", log.Ldate|log.Ltime)
-var SimLogger *log.Logger
+var (
+	SimLogger *log.Logger
+	logSplitFunc func() = func(){}
+)
 
 // SetLogger sets a new logger.
 func SetLogger(l *log.Logger) {
 	SimLogger = l
 }
 
-func Init(path string, maxsize, maxindex, maxday, loglevel int) {
-	logInit(path, maxsize, maxindex, maxday, loglevel)
+func SetSplit(maxsize, maxindex int) {
+	setLogSplit(maxsize, maxindex)
+}
+
+func Init(path string, maxday, loglevel int) {
+	logInit(path, maxday, loglevel)
 }
 
 func Close() {
@@ -53,27 +60,45 @@ func Close() {
 }
 
 func Trace(v ...interface{}) {
-	LogTrace(fmt.Sprint(v...))
+	if level < LevelTrace {
+		logSplitFunc()
+		SimLogger.Output(3, fmt.Sprint(v...))
+	}
 }
 
 func Debug(v ...interface{}) {
-	LogDebug(fmt.Sprint(v...), 4)
+	if level < LevelDebug {
+		logSplitFunc()
+		SimLogger.Output(3, fmt.Sprint(v...))
+	}
 }
 
 func Info(v ...interface{}) {
-	LogInfo(fmt.Sprint(v...), 4)
+	if level < LevelInfo {
+		logSplitFunc()
+		SimLogger.Output(3, fmt.Sprint(v...))
+	}
 }
 
 func Warn(v ...interface{}) {
-	LogWarn(fmt.Sprint(v...), 4)
+	if level < LevelWarning {
+		logSplitFunc()
+		SimLogger.Output(3, fmt.Sprint(v...))
+	}
 }
 
 func Error(v ...interface{}) {
-	LogError(fmt.Sprint(v...), 4)
+	if level < LevelError {
+		logSplitFunc()
+		SimLogger.Output(3, fmt.Sprint(v...))
+	}
 }
 
 func Critical(v ...interface{}) {
-	LogCritical(fmt.Sprint(v...), 4)
+	if level < LevelCritical {
+		logSplitFunc()
+		SimLogger.Output(3, fmt.Sprint(v...))
+	}
 }
 
 // Trace logs a message at trace level.
@@ -119,16 +144,18 @@ func LogCritical(format string, skips ...int) {
 }
 
 func logPrintf(format string, v ...int) {
+	logSplitFunc()
+	skip := 3
+	if len(v) > 0 {skip = v[0]}
+	SimLogger.Output(skip, format)
+}
+
+func logSplit() {
 	logfilelock.Lock()
 	defer logfilelock.Unlock()
 	logcnt++
 	if logcnt > MAXLOGCNT {
-		changelogindex(len(format) + 1)
+		changelogindex(1)
 		logcnt = 0
 	}
-	skip := 3
-	if len(v) > 0 {
-		skip = v[0]
-	}
-	SimLogger.Output(skip, fmt.Sprintf(format))
 }

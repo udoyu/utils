@@ -17,6 +17,7 @@ const (
 )
 
 var (
+	splitFlag    bool		 //是否根据文件大小切割
 	logbasepath  string      //日志根目录，传参设定
 	MAXFILESIZE  int64       //每个文件最大大小，传参设定
 	MAXLOGINDEX  int         //每天最大文件个数，传参设定
@@ -43,32 +44,34 @@ func GetLogName(path string) string {
 		fmt.Printf("[nettao]GetLogName|ReadDir %s|%s failed", path, err.Error())
 		os.Exit(-1)
 	}
-	logfileindex = 0
-
-	for _, fi := range fis {
-		if fi.IsDir() {
-			continue
+	filename := ""
+	if splitFlag {
+		logfileindex = 0
+	
+		for _, fi := range fis {
+			if fi.IsDir() {
+				continue
+			}
+			logfileindex++
+		}
+	
+		if logfileindex >= MAXLOGINDEX {
+			logfileindex = 0
 		}
 		logfileindex++
+		filename = path + fmt.Sprintf("%d.log", logfileindex)
+	} else {
+		filename = path + "all.log"
 	}
-
-	if logfileindex >= MAXLOGINDEX {
-		logfileindex = 0
-	}
-	logfileindex++
-	filename := path + fmt.Sprintf("%d.log", logfileindex)
-
 	return filename
 }
 
-func logInit(path string, maxsize, maxindex, maxday, loglevel int) {
+func logInit(path string, maxday, loglevel int) {
 	logfilelock = new(sync.Mutex)
 	logfilelock.Lock()
 	defer logfilelock.Unlock()
 	now := time.Now()
-	MAXFILESIZE = int64(maxsize * 1024 * 1024)
-	MAXLOGCNT = int(MAXFILESIZE / 1024)
-	MAXLOGINDEX = maxindex
+	
 	MAXLOGDAY = maxday
 	SetLogLevel(loglevel)
 	logdate = now
@@ -79,10 +82,10 @@ func logInit(path string, maxsize, maxindex, maxday, loglevel int) {
 		fmt.Printf("[nettao]LogInit|MakeDirAll logpath %s|%s failed\n", logfilepath, err.Error())
 		os.Exit(-1)
 	}
-
+	 
 	logfilename = GetLogName(logfilepath)
 
-	logfile, err = OpenAndCreateFile(logfilename, os.O_TRUNC)
+	logfile, err = OpenAndCreateFile(logfilename, os.O_APPEND)
 	if nil != err {
 		fmt.Printf("[nettao]Start|open log file %s|%s\n", logfilename, err.Error())
 		os.Exit(-1)
@@ -90,6 +93,13 @@ func logInit(path string, maxsize, maxindex, maxday, loglevel int) {
 	SimLogger = log.New(logfile, "\n", log.Ldate|log.Ltime|log.Llongfile)
 	removelogdir(MAXLOGDAY, now)
 	go changelogdate()
+}
+
+func setLogSplit(maxsize, maxindex int) {
+	splitFlag = true
+	MAXFILESIZE = int64(maxsize * 1024 * 1024)
+	MAXLOGCNT = int(MAXFILESIZE / 1024)
+	MAXLOGINDEX = maxindex
 }
 
 func logClose() {
