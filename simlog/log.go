@@ -49,6 +49,7 @@ func SetLogger(l *log.Logger) {
 
 func SetSplit(maxsize, maxindex int) {
 	setLogSplit(maxsize, maxindex)
+	logSplitFunc = logSplit
 }
 
 func Init(path string, maxday, loglevel int) {
