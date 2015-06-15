@@ -6,13 +6,12 @@ import (
 
 type SafeSet struct {
 	set  *Set
-	lock *sync.RWMutex
+	lock sync.RWMutex
 }
 
 func NewSafeSet() *SafeSet {
 	s := &SafeSet{
 		set:  NewSet(),
-		lock: new(sync.RWMutex),
 	}
 	return s
 }
