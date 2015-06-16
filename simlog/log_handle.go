@@ -66,7 +66,7 @@ func GetLogName(path string) string {
 	return filename
 }
 
-func logInit(path string, maxday, loglevel int) {
+func logInit(path string, maxday int, loglevel Level) {
 	logfilelock = new(sync.Mutex)
 	logfilelock.Lock()
 	defer logfilelock.Unlock()
