@@ -75,6 +75,30 @@ func StructTravelFunc(v reflect.Value, t reflect.StructField, qi QueryInterface)
 				}
 			}
 		}
+	} else {
+		if v.NumMethod() == 0 {
+			if str := qi.Query(t); len(str) != 0 && v.CanSet() {
+				//form := utils.StringCutRightExp(t.Tag.Get("json"), ",", 1)
+				switch v.Type() {
+				case STRING:
+					v.Set(reflect.ValueOf(str))
+				case INT32:
+					v.Set(reflect.ValueOf(int32(Atoi(str))))
+				case INT64:
+					v.Set(reflect.ValueOf(Atol(str)))
+				case UINT32:
+					v.Set(reflect.ValueOf(uint32(Atoi(str))))
+				case UINT64:
+					v.Set(reflect.ValueOf(uint64(Atol(str))))
+				case BOOL:
+					if str == "true" {
+						v.Set(reflect.ValueOf(true))
+					} else {
+						v.Set(reflect.ValueOf(false))
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -88,6 +112,15 @@ func Atoi(s string) int {
 	return i
 }
 
+func Atoul(s string) uint64 {
+	i, _ := strconv.ParseUint(s, 10, 64)
+	return i
+}
+
+func Atou(s string) uint {
+	return uint(Atoul(s))
+}
+
 var (
 	STRING_PTR = reflect.TypeOf(String(""))
 	INT32_PTR  = reflect.TypeOf(Int32(int32(0)))
@@ -95,4 +128,11 @@ var (
 	UINT32_PTR = reflect.TypeOf(Uint32(uint32(0)))
 	UINT64_PTR = reflect.TypeOf(Uint64(uint64(0)))
 	BOOL_PTR   = reflect.TypeOf(Bool(false))
+	
+	STRING = reflect.TypeOf("")
+    INT32  = reflect.TypeOf(int32(0))
+    INT64  = reflect.TypeOf(int64(0))
+    UINT32 = reflect.TypeOf(uint32(0))
+    UINT64 = reflect.TypeOf(uint64(0))
+    BOOL   = reflect.TypeOf(false)
 )
