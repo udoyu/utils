@@ -37,6 +37,23 @@ func StructTravelSet(v interface{}, qi QueryInterface) interface{} {
 	return StructTravel(v, qi, StructTravelFunc)
 }
 
+/*
+example:
+type QueryI struct {
+	req http.Request
+}
+
+func (this QueryI) Query(t reflect.StructField) string {
+	form := utils.StringCutRightExp(t.Tag.Get("json"), ",", 1)
+	return this.FormValue(form)
+}
+
+ */
+
+
+
+
+
 func StructTravel(v interface{},
 	qi QueryInterface,
 	f func(v reflect.Value,

@@ -16,9 +16,9 @@ func (this Command) Append(args interface{}) Command {
 	return this
 }
 
-type Commonds []Command
+type Commands []Command
 
-func (this Commonds) Append(command Command) Commonds {
+func (this Commands) Append(command Command) Commands {
 	this = append(this, command)
 	return this
 }
