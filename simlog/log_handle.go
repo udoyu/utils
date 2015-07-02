@@ -17,7 +17,7 @@ const (
 )
 
 var (
-	splitFlag    bool		 //是否根据文件大小切割
+	splitFlag    bool        //是否根据文件大小切割
 	logbasepath  string      //日志根目录，传参设定
 	MAXFILESIZE  int64       //每个文件最大大小，传参设定
 	MAXLOGINDEX  int         //每天最大文件个数，传参设定
@@ -47,14 +47,14 @@ func GetLogName(path string) string {
 	filename := ""
 	if splitFlag {
 		logfileindex = 0
-	
+
 		for _, fi := range fis {
 			if fi.IsDir() {
 				continue
 			}
 			logfileindex++
 		}
-	
+
 		if logfileindex >= MAXLOGINDEX {
 			logfileindex = 0
 		}
@@ -71,7 +71,7 @@ func logInit(path string, maxday int, loglevel Level) {
 	logfilelock.Lock()
 	defer logfilelock.Unlock()
 	now := time.Now()
-	
+
 	MAXLOGDAY = maxday
 	SetLogLevel(loglevel)
 	logdate = now
@@ -82,7 +82,7 @@ func logInit(path string, maxday int, loglevel Level) {
 		fmt.Printf("[nettao]LogInit|MakeDirAll logpath %s|%s failed\n", logfilepath, err.Error())
 		os.Exit(-1)
 	}
-	 
+
 	logfilename = GetLogName(logfilepath)
 
 	logfile, err = OpenAndCreateFile(logfilename, os.O_APPEND)
