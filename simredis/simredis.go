@@ -90,6 +90,12 @@ func (this *RedisProvider) Do(commandName string, args ...interface{}) (reply in
 func (this *RedisProvider) Send(commands []Command) error {
 	var err error
 	for i := 0; i < this.redisNum; i++ {
+		if this.pool == nil {
+			this.Update()
+			if this.pool == nil {
+				continue
+			}
+		}
 		c := this.pool.Get()
 		defer c.Close()
 		for _, v := range commands {
