@@ -24,7 +24,7 @@ const (
 )
 
 var (
-	levelName    = []string{"[T]", "[D]", "[I]", "[W]", "[E]", "[C]"}
+	levelName    = []string{"[TRACE]", "[DEBUG]", "[INFO]", "[WARN]", "[ERROR]", "[CRITICAL]"}
 	level        = LevelTrace //日志等级，传参设定
 	SimLogger    *log.Logger
 	logSplitFunc func()                 = func() {}
