@@ -33,12 +33,13 @@ func (p *SimIni) LoadFile(filename string) int {
 	p.sess_map_ = make(map[string]StrMap)
 	buf := bufio.NewReader(fd)
 	curkey := ""
-	for {
+	flag := true
+	for flag {
 		line, err := buf.ReadString('\n')
 		if io.EOF == err {
-			break
+			flag = false
 		}
-
+		
 		line = strings.TrimLeft(line, " ")
 		if len(line) < 2 || '#' == line[0] || '\n' == line[0] || '\r' == line[0] {
 			continue
