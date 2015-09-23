@@ -64,7 +64,9 @@ func (p *SimIni) LoadFile(filename string) int {
 			continue
 		}
 		v := strings.TrimLeft(val[1], " ")
-		p.sess_map_[curkey][strings.TrimRight(val[0], " ")] = v[0 : len(v)-1]
+		v_len := len(v)-1
+		if !flag {v_len += 1}
+		p.sess_map_[curkey][strings.TrimRight(val[0], " ")] = v[0 : v_len]
 	}
 	p.loaded_ = true
 	return 0
