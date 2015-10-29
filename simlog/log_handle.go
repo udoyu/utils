@@ -161,7 +161,11 @@ func changelogfile() {
 	//关闭上一个文件
 	logfile.Close()
 	//创建新文件
-	logfilename = logfilepath + fmt.Sprintf("%d.log", logfileindex)
+	if splitFlag {
+		logfilename = logfilepath + fmt.Sprintf("%d.log", logfileindex)
+	} else {
+		logfilename = logfilepath + "all.log"
+	}
 	var err error
 	logfile, err = OpenAndCreateFile(logfilename, os.O_TRUNC)
 	if nil != err {
