@@ -13,20 +13,20 @@ import (
 type AliPay struct {
 	partner       string          // 合作者ID
 	sellerEmail   string          // 合作者Email
-	notifyUrl     string          // 异步url
 	returnUrl     string          // 同步url
+	notifyUrl     string          // 异步url
 	md5Key        string          // md5 key
 	rsaPrivateKey *rsa.PrivateKey // rsa private key
 	rsaPublicKey  *rsa.PublicKey  // rsa public key
 }
 
-func NewAliPay(partner, sellerEmail, notifyUrl, returnUrl,
+func NewAliPay(partner, sellerEmail, returnUrl, notifyUrl, 
 	md5Key, rsaPrivPEM, rsaPubcPEM string) (AliPay, error) {
 	ap := AliPay{
 		partner:     partner,
 		sellerEmail: sellerEmail,
-		notifyUrl:   notifyUrl,
 		returnUrl:   returnUrl,
+		notifyUrl:   notifyUrl,
 		md5Key:      md5Key,
 	}
 	{
