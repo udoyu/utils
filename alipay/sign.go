@@ -74,7 +74,7 @@ func MD5Sign(str, key string) string {
 	return sign
 }
 
-func RSASign(str string, priv *rsa.PrivateKey) ([]byte, error) {
+func RSASignToBytes(str string, priv *rsa.PrivateKey) ([]byte, error) {
 	return xrsa.RsaSignToBytes(priv, str)
 }
 
