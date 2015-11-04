@@ -1,12 +1,15 @@
 package alipay
+
 import (
 	"crypto/md5"
+	"crypto/rsa"
 	"encoding/hex"
+	"encoding/json"
+	"github.com/udoyu/utils/xrsa"
 	"net/url"
 	"sort"
-	"strings"
-	"encoding/json"
 	"strconv"
+	"strings"
 )
 
 type KV struct {
@@ -21,7 +24,7 @@ func (this KVS) Swap(i, j int)      { this[i], this[j] = this[j], this[i] }
 func (this KVS) Less(i, j int) bool { return this[i].key < this[j].key }
 
 //filter md5 and sort
-func NewKVSFromString (str string) (kvs KVS, sign, sign_type string) {
+func NewKVSFromString(str string) (kvs KVS, sign, sign_type string) {
 	body, _ := url.QueryUnescape(str)
 	vs := strings.Split(body, "&")
 	for _, v := range vs {
@@ -38,7 +41,7 @@ func NewKVSFromString (str string) (kvs KVS, sign, sign_type string) {
 	return kvs, sign, sign_type
 }
 
-func NewKVSFromForm (form url.Values) (kvs KVS, sign, sign_type string) {
+func NewKVSFromForm(form url.Values) (kvs KVS, sign, sign_type string) {
 	for key, _ := range form {
 		v := form.Get(key)
 		if key == "sign" {
@@ -46,7 +49,7 @@ func NewKVSFromForm (form url.Values) (kvs KVS, sign, sign_type string) {
 		} else if key == "sign_type" {
 			sign_type = v
 		} else {
-			kvs = append(kvs, KV{key:key, value:key+"="+v})
+			kvs = append(kvs, KV{key: key, value: key + "=" + v})
 		}
 	}
 	sort.Sort(kvs)
@@ -64,11 +67,19 @@ func (this KVS) String() string {
 }
 
 func MD5Sign(str, key string) string {
-	
+
 	m := md5.New()
-	m.Write([]byte(str+key))
+	m.Write([]byte(str + key))
 	sign := hex.EncodeToString(m.Sum(nil))
 	return sign
+}
+
+func RSASign(str string, priv *rsa.PrivateKey) ([]byte, error) {
+	return xrsa.RsaSignToBytes(priv, str)
+}
+
+func RsaVerifyBytes(srcStr string, signBytes []byte, pubc *rsa.PublicKey) error {
+	return xrsa.RsaVerifyBytes(pubc, srcStr, signBytes)
 }
 
 // 按照支付宝规则生成sign
