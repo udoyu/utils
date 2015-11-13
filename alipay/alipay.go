@@ -92,7 +92,7 @@ func (this AliPay) Sign(form url.Values) (string, error) {
 	kvs, _, sign_type := NewKVSFromForm(form)
 	if sign_type == "MD5" {
 		return MD5Sign(kvs.String(), this.md5Key), nil
-	} else if sign_type == "RSA" {
+	} else if sign_type == "RSA" || sign_type == "\"RSA\"" {
 		signBytes, err := RSASignToBytes(kvs.String(), this.rsaPrivateKey)
 		if err != nil {
 			return "", err
