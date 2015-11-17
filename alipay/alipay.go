@@ -20,7 +20,7 @@ type AliPay struct {
 	rsaPublicKey  *rsa.PublicKey  // rsa public key
 }
 
-func NewAliPay(partner, sellerEmail, returnUrl, notifyUrl, 
+func NewAliPay(partner, sellerEmail, returnUrl, notifyUrl,
 	md5Key, rsaPrivPEM, rsaPubcPEM string) (AliPay, error) {
 	ap := AliPay{
 		partner:     partner,
@@ -105,10 +105,11 @@ func (this AliPay) Sign(form url.Values) (string, error) {
 
 // 生成订单的参数
 type Options struct {
-	OrderId  string  // 订单唯一id
-	Fee      float32 // 价格
-	NickName string  // 充值账户名称
-	Subject  string  // 充值描述
+	OrderId     string  // 订单唯一id
+	Fee         float32 // 价格
+	NickName    string  // 充值账户名称
+	Subject     string  // 充值描述
+	Defaultbank string  //网银支付，为空时表示非网银支付
 }
 
 type Result struct {
@@ -151,6 +152,7 @@ func (this AliPay) BuildForm(opts Options) url.Values {
 	param.Service = "create_direct_pay_by_user"
 	param.Subject = opts.Subject
 	param.TotalFee = opts.Fee
+	param.Defaultbank = opts.Defaultbank
 
 	form := make(url.Values)
 	form.Add("_input_charset", param.InputCharset)
@@ -164,6 +166,9 @@ func (this AliPay) BuildForm(opts Options) url.Values {
 	form.Add("service", param.Service)
 	form.Add("subject", param.Subject)
 	form.Add("total_fee", strconv.FormatFloat(float64(param.TotalFee), 'f', 2, 32))
+	if param.Defaultbank != "" {
+		form.Add("defaultbank", param.Defaultbank)
+	}
 	return form
 }
 
@@ -285,4 +290,5 @@ type AlipayParameters struct {
 	TotalFee     float32 `json:"total_fee"`      //总价
 	Sign         string  `json:"sign"`           //签名，生成签名时忽略
 	SignType     string  `json:"sign_type"`      //签名类型，生成签名时忽略
+	Defaultbank  string  `json:"defaultbank"`    //网银支付，为空时表示非网银支付
 }
