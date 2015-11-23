@@ -49,7 +49,7 @@ func NewKVSFromForm(form url.Values) (kvs KVS, sign, sign_type string) {
 			sign = v
 		} else if key == "sign_type" {
 			sign_type = v
-		} else {
+		} else if v != "" {
 			kvs = append(kvs, KV{key: key, value: key + "=" + v})
 		}
 	}

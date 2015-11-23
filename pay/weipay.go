@@ -71,37 +71,37 @@ type UnifiedOrderRsp struct {
 type WeiNotifyReq struct {
 	XMLName     xml.Name `xml:"xml" json:"-"`
 	Return_code string   `xml:"return_code" json:"return_code"`
-	Return_msg  *string  `xml:"return_msg,omitempty" json:"return_msg,omitempty"`
+	Return_msg  string   `xml:"return_msg,omitempty" json:"return_msg,omitempty"`
 
-	Appid        *string `xml:"appid,omitempty" json:"appid,omitempty"`
-	Mch_id       *string `xml:"mch_id,omitempty" json:"mch_id,omitempty"`
-	Device_info  *string `xml:"device_info,omitempty" json:"device_info,omitempty"`
-	Nonce_str    *string `xml:"nonce_str,omitempty" json:"nonce_str,omitempty"`
-	Sign         *string `xml:"sign,omitempty" json:"sign,omitempty"`
-	Result_code  *string `xml:"result_code,omitempty" json:"result_code,omitempty"`
-	Err_code     *string `xml:"err_code,omitempty" json:"err_code,omitempty"`
-	Err_code_des *string `xml:"err_code_des,omitempty" json:"return_msg,omitempty"`
-	Openid	*string `xml:"openid,omitempty" json:"openid,omitempty"` 
-	Is_subscribe *string `xml:"is_subscribe,omitempty" json:"is_subscribe,omitempty"`
-	Trade_type *string `xml:"trade_type,omitempty" json:"trade_type,omitempty"`
-	
-	Bank_type *string `xml:"bank_type,omitempty" json:"bank_type,omitempty"`
-	Total_fee *int `xml:"total_fee,omitempty" json:"total_fee,omitempty"`
-	Fee_type *string `xml:"fee_type,omitempty" json:"fee_type,omitempty"`
-	Cash_fee *string `xml:"cash_fee,omitempty" json:"cash_fee,omitempty"`
-	Cash_fee_type *string `xml:"cash_fee_type,omitempty" json:"cash_fee_type,omitempty"`
-	Transaction_id *string `xml:"transaction_id,omitempty" json:"transaction_id,omitempty"`
-	Out_trade_no *string `xml:"out_trade_no,omitempty" json:"out_trade_no,omitempty"`
-	Prepay_id  *string `xml:"prepay_id,omitempty" json:"prepay_id,omitempty"`
-	Attach *string `xml:"attach,omitempty" json:"attach,omitempty"`
-	Time_end *string `xml:"time_end,omitempty" json:"time_end,omitempty"`
-	Code_url   *string `xml:"code_url,omitempty" json:"code_url,omitempty"`
+	Appid        string `xml:"appid,omitempty" json:"appid,omitempty"`
+	Mch_id       string `xml:"mch_id,omitempty" json:"mch_id,omitempty"`
+	Device_info  string `xml:"device_info,omitempty" json:"device_info,omitempty"`
+	Nonce_str    string `xml:"nonce_str,omitempty" json:"nonce_str,omitempty"`
+	Sign         string `xml:"sign,omitempty" json:"sign,omitempty"`
+	Result_code  string `xml:"result_code,omitempty" json:"result_code,omitempty"`
+	Err_code     string `xml:"err_code,omitempty" json:"err_code,omitempty"`
+	Err_code_des string `xml:"err_code_des,omitempty" json:"return_msg,omitempty"`
+	Openid       string `xml:"openid,omitempty" json:"openid,omitempty"`
+	Is_subscribe string `xml:"is_subscribe,omitempty" json:"is_subscribe,omitempty"`
+	Trade_type   string `xml:"trade_type,omitempty" json:"trade_type,omitempty"`
+
+	Bank_type      string `xml:"bank_type,omitempty" json:"bank_type,omitempty"`
+	Total_fee      int    `xml:"total_fee,omitempty" json:"total_fee,omitempty"`
+	Fee_type       string `xml:"fee_type,omitempty" json:"fee_type,omitempty"`
+	Cash_fee       string `xml:"cash_fee,omitempty" json:"cash_fee,omitempty"`
+	Cash_fee_type  string `xml:"cash_fee_type,omitempty" json:"cash_fee_type,omitempty"`
+	Transaction_id string `xml:"transaction_id,omitempty" json:"transaction_id,omitempty"`
+	Out_trade_no   string `xml:"out_trade_no,omitempty" json:"out_trade_no,omitempty"`
+	Prepay_id      string `xml:"prepay_id,omitempty" json:"prepay_id,omitempty"`
+	Attach         string `xml:"attach,omitempty" json:"attach,omitempty"`
+	Time_end       string `xml:"time_end,omitempty" json:"time_end,omitempty"`
+	Code_url       string `xml:"code_url,omitempty" json:"code_url,omitempty"`
 }
 
 type WeiNotifyRsp struct {
 	XMLName     xml.Name `xml:"xml" json:"-"`
 	Return_code string   `xml:"return_code" json:"return_code"`
-	Return_msg  *string  `xml:"return_msg,omitempty" json:"return_msg,omitempty"`
+	Return_msg  string   `xml:"return_msg,omitempty" json:"return_msg,omitempty"`
 }
 
 func AnyToForm(v interface{}) url.Values {
@@ -173,6 +173,7 @@ func (this WeiPay) MD5SignFromKVS(kvs KVS) string {
 
 func (this WeiPay) MD5Sign(form url.Values) string {
 	//	form.Add("key", this.md5_key)
+	form.Del("xml")
 	kvs, _, _ := NewKVSFromForm(form)
 	return this.MD5SignFromKVS(kvs)
 }
