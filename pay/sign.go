@@ -1,10 +1,11 @@
-package alipay
+package pay
 
 import (
 	"crypto/md5"
 	"crypto/rsa"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"github.com/udoyu/utils/xrsa"
 	"net/url"
 	"sort"
@@ -33,7 +34,7 @@ func NewKVSFromString(str string) (kvs KVS, sign, sign_type string) {
 			sign = kv[1]
 		} else if kv[0] == "sign_type" {
 			sign_type = kv[1]
-		} else {
+		} else if kv[1] != "" {
 			kvs = append(kvs, KV{key: kv[0], value: v})
 		}
 	}
@@ -56,6 +57,21 @@ func NewKVSFromForm(form url.Values) (kvs KVS, sign, sign_type string) {
 	return kvs, sign, sign_type
 }
 
+func NewKVSFromMap(m map[string]interface{}) (kvs KVS, sign, sign_type string) {
+	for key, value := range m {
+		v := fmt.Sprint(value)
+		if key == "sign" {
+			sign = v
+		} else if key == "sign_type" {
+			sign_type = v
+		} else {
+			kvs = append(kvs, KV{key: key, value: key + "=" + v})
+		}
+	}
+	sort.Sort(kvs)
+	return kvs, sign, sign_type
+}
+
 func (this KVS) String() string {
 	newBody := ""
 	for _, v := range this {
@@ -64,6 +80,14 @@ func (this KVS) String() string {
 
 	newBody = newBody[:len(newBody)-1]
 	return newBody
+}
+
+func (this KVS) Form() url.Values {
+	form := make(url.Values)
+	for _, v := range this {
+		form.Add(v.key, v.value)
+	}
+	return form
 }
 
 func MD5Sign(str, key string) string {

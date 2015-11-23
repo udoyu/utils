@@ -1,4 +1,4 @@
-package alipay
+package pay
 
 import (
 	"crypto/rsa"
@@ -110,7 +110,7 @@ type Options struct {
 	NickName    string  // 充值账户名称
 	Subject     string  // 充值描述
 	Defaultbank string  //网银支付，为空时表示非网银支付
-	PayType	string //支付类型,alipay, bankpay
+	PayType     string  //支付类型,alipay, bankpay
 }
 
 type Result struct {
@@ -170,7 +170,7 @@ func (this AliPay) BuildForm(opts Options) url.Values {
 	form.Add("extra_common_param", opts.PayType)
 	if param.Defaultbank != "" {
 		form.Add("defaultbank", param.Defaultbank)
-	} 
+	}
 	return form
 }
 
