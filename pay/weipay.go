@@ -52,20 +52,20 @@ type UnifiedOrderReq struct {
 type UnifiedOrderRsp struct {
 	XMLName     xml.Name `xml:"xml" json:"-"`
 	Return_code string   `xml:"return_code" json:"return_code"`
-	Return_msg  *string  `xml:"return_msg,omitempty" json:"return_msg,omitempty"`
+	Return_msg  string  `xml:"return_msg,omitempty" json:"return_msg,omitempty"`
 
-	Appid        *string `xml:"appid,omitempty" json:"appid,omitempty"`
-	Mch_id       *string `xml:"mch_id,omitempty" json:"mch_id,omitempty"`
-	Device_info  *string `xml:"device_info,omitempty" json:"device_info,omitempty"`
-	Nonce_str    *string `xml:"nonce_str,omitempty" json:"nonce_str,omitempty"`
-	Sign         *string `xml:"sign,omitempty" json:"sign,omitempty"`
-	Result_code  *string `xml:"result_code,omitempty" json:"result_code,omitempty"`
-	Err_code     *string `xml:"err_code,omitempty" json:"err_code,omitempty"`
-	Err_code_des *string `xml:"err_code_des,omitempty" json:"return_msg,omitempty"`
+	Appid        string `xml:"appid,omitempty" json:"appid,omitempty"`
+	Mch_id       string `xml:"mch_id,omitempty" json:"mch_id,omitempty"`
+	Device_info  string `xml:"device_info,omitempty" json:"device_info,omitempty"`
+	Nonce_str    string `xml:"nonce_str,omitempty" json:"nonce_str,omitempty"`
+	Sign         string `xml:"sign,omitempty" json:"sign,omitempty"`
+	Result_code  string `xml:"result_code,omitempty" json:"result_code,omitempty"`
+	Err_code     string `xml:"err_code,omitempty" json:"err_code,omitempty"`
+	Err_code_des string `xml:"err_code_des,omitempty" json:"return_msg,omitempty"`
 
-	Trade_type *string `xml:"trade_type,omitempty" json:"trade_type,omitempty"`
-	Prepay_id  *string `xml:"prepay_id,omitempty" json:"prepay_id,omitempty"`
-	Code_url   *string `xml:"code_url,omitempty" json:"code_url,omitempty"`
+	Trade_type string `xml:"trade_type,omitempty" json:"trade_type,omitempty"`
+	Prepay_id  string `xml:"prepay_id,omitempty" json:"prepay_id,omitempty"`
+	Code_url   string `xml:"code_url,omitempty" json:"code_url,omitempty"`
 }
 
 type WeiNotifyReq struct {
@@ -125,10 +125,10 @@ func AnyToForm(v interface{}) url.Values {
 func (this WeiPay) UnifiedOrder(wpOptions UnifiedOrderReq) (*UnifiedOrderRsp, error) {
 	wpOptions.Appid = this.appid
 	wpOptions.Mch_id = this.mch_id
-	wpOptions.Device_info = "WEB"
+	
 	wpOptions.Nonce_str = NonceStr()[:16]
 	wpOptions.Notify_url = this.notify_url
-	wpOptions.Trade_type = "NATIVE"
+	
 	wpOptions.Attach = "weipay"
 	form := AnyToForm(wpOptions)
 	form.Del("xml")
@@ -146,13 +146,15 @@ func (this WeiPay) UnifiedOrder(wpOptions UnifiedOrderReq) (*UnifiedOrderRsp, er
 	fmt.Println(rsp)
 	return_code := rsp.Return_code
 	if return_code != "SUCCESS" {
-		if rsp.Return_msg != nil {
-			return &rsp, fmt.Errorf("Error 302 : %s", *rsp.Return_msg)
+		if rsp.Return_msg != "" {
+			return &rsp, fmt.Errorf("Error 302 : %s", rsp.Return_msg)
 		} else {
 			return &rsp, fmt.Errorf("Error 303 : unknown return_msg")
 		}
 	}
-
+	if rsp.Result_code != "SUCCESS" {
+		return &rsp, fmt.Errorf("Error 305 : %s %s ", rsp.Err_code, rsp.Err_code_des)
+	}
 	form = AnyToForm(rsp)
 	fmt.Println(form)
 	kvs, sign, _ := NewKVSFromForm(form)
