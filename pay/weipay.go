@@ -116,6 +116,32 @@ func AnyToForm(v interface{}) url.Values {
 		tag := vtypes.Field(i).Tag.Get("xml")
 		if strings.Contains(tag, ",") {
 			tag = utils.StringCutRightExp(tag, ",", 1)
+		} else if tag == "-" {
+			continue
+		} else if tag == "" {
+			tag = vtypes.Field(i).Name
+		}
+		form.Add(tag, fmt.Sprint(values.Field(i).Interface()))
+	}
+	return form
+}
+
+func JsonToForm(v interface{}) url.Values {
+	form := make(url.Values)
+	values := reflect.ValueOf(v)
+	vtypes := reflect.TypeOf(v)
+	if values.Kind() == reflect.Ptr {
+		values = values.Elem()
+		vtypes = vtypes.Elem()
+	}
+	for i := 0; i < values.NumField(); i++ {
+		tag := vtypes.Field(i).Tag.Get("json")
+		if strings.Contains(tag, ",") {
+			tag = utils.StringCutRightExp(tag, ",", 1)
+		} else if tag == "-" {
+			continue
+		} else if tag == "" {
+			tag = vtypes.Field(i).Name
 		}
 		form.Add(tag, fmt.Sprint(values.Field(i).Interface()))
 	}
