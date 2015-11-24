@@ -157,6 +157,7 @@ func (this WeiPay) UnifiedOrder(wpOptions UnifiedOrderReq) (*UnifiedOrderRsp, er
 	}
 	form = AnyToForm(rsp)
 	fmt.Println(form)
+	form.Del("xml")
 	kvs, sign, _ := NewKVSFromForm(form)
 	nsign := this.MD5SignFromKVS(kvs)
 	if sign != nsign {
