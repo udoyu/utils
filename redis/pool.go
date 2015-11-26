@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"time"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"sync/atomic"
@@ -8,8 +9,7 @@ import (
 
 type RedisConn struct {
 	redis.Conn
-	pool      *Pool
-	activeNum int32 //0，1,正常，2超时
+	pool *Pool
 }
 
 func (this *RedisConn) Close() error {
@@ -23,6 +23,11 @@ func (this *RedisConn) Close() error {
 	return nil
 }
 
+func (this RedisConn) Command(commandName string, args ...interface{}) *RedisReply {
+	reply, err := this.Do(commandName, args)
+	return NewRedisReply(reply, err)
+}
+
 type Pool struct {
 	callback  func() (redis.Conn, error)
 	elems     chan *RedisConn
@@ -33,12 +38,23 @@ type Pool struct {
 }
 
 func NewPool(callback func() (redis.Conn, error), maxIdle, maxActive int32) *Pool {
-	return &Pool{
+	pool := &Pool{
 		callback:  callback,
 		elems:     make(chan *RedisConn, maxIdle),
 		maxIdle:   maxIdle,
 		maxActive: maxActive,
 	}
+	go pool.timerEvent()
+	return pool
+}
+
+func (this *Pool) Do (commandName string, args ...interface{}) (reply interface{}, err error) {
+	c, err := this.Get()
+	if err != nil {
+		return nil, err
+	}
+	defer c.Close()
+	return c.Do(commandName, args...)
 }
 
 func (this *Pool) Put(elem *RedisConn) {
@@ -73,9 +89,41 @@ func (this *Pool) Get() (*RedisConn, error) {
 				pool: this,
 			}, nil
 		} else {
+			fmt.Println("Error 0001 : too many active conn, maxActive=", this.maxActive)
+			return <-this.elems, nil
+		}
+	}
+}
+
+func (this *Pool) GetAsync() (*RedisConn, error) {
+	if atomic.LoadInt32(&this.status) != 0 {
+		return nil, fmt.Errorf("Error 0002 : this pool has been closed")
+	}
+	select {
+	case e := <-this.elems:
+		return e, nil
+	default:
+		ca := atomic.AddInt32(&this.curActive, 1)
+		if ca < this.maxActive {
+			conn, err := this.callback()
+			if err != nil {
+				return nil, err
+			}
+			return &RedisConn{
+				Conn: conn,
+				pool: this,
+			}, nil
+		} else {
 			return nil, fmt.Errorf("Error 0001 : too many active conn, maxActive=%d", this.maxActive)
 		}
 	}
+}
+
+func (this *Pool) GetSync() (*RedisConn, error) {
+	if atomic.LoadInt32(&this.status) != 0 {
+		return nil, fmt.Errorf("Error 0002 : this pool has been closed")
+	}
+	return <-this.elems, nil
 }
 
 func (this *Pool) Close() {
@@ -86,6 +134,22 @@ func (this *Pool) Close() {
 			e.Conn.Close()
 		default:
 			return
+		}
+	}
+}
+
+func (this *Pool) timerEvent() {
+	timer := time.NewTicker(time.Second * 3)
+	defer timer.Stop()
+	for this.status == 0 {
+		select {
+			case <- timer.C :
+				select {
+					case e := <-this.elems :
+						e.Do("PING")
+					default :
+						break
+				}
 		}
 	}
 }
