@@ -78,12 +78,13 @@ func (this *Pool) Get() (*RedisConn, error) {
 	case e := <-this.elems:
 		return e, nil
 	default:
-		ca := atomic.AddInt32(&this.curActive, 1)
+		ca := atomic.LoadInt32(&this.curActive)
 		if ca < this.maxActive {
 			conn, err := this.callback()
 			if err != nil {
 				return nil, err
 			}
+			atomic.AddInt32(&this.curActive, 1)
 			return &RedisConn{
 				Conn: conn,
 				pool: this,
@@ -103,12 +104,13 @@ func (this *Pool) GetAsync() (*RedisConn, error) {
 	case e := <-this.elems:
 		return e, nil
 	default:
-		ca := atomic.AddInt32(&this.curActive, 1)
+		ca := atomic.LoadInt32(&this.curActive)
 		if ca < this.maxActive {
 			conn, err := this.callback()
 			if err != nil {
 				return nil, err
 			}
+			atomic.AddInt32(&this.curActive, 1)
 			return &RedisConn{
 				Conn: conn,
 				pool: this,
