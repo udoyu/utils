@@ -58,10 +58,14 @@ func (this *Pool) Update(maxIdle, maxActive int32) {
 	flag := true
 	for flag {
 		select {
-		case this.elems <- <-elems:
+		case e := <-elems:
+			select {
+				case this.elems <- e :
+				default :
+					flag = false
+			}
 		default:
 			flag = false
-			break
 		}
 	}
 }
