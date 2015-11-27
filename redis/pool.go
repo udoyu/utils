@@ -52,8 +52,9 @@ func (this *Pool) Update(maxIdle, maxActive int32) {
 		return
 	}
 	this.maxIdle = maxIdle
-	elems := make(chan *RedisConn, maxIdle)
-	this.elems, elems = elems, this.elems
+	elems := this.elems
+	this.elems = make(chan *RedisConn, maxIdle)
+	
 	flag := true
 	for flag {
 		select {
@@ -61,6 +62,7 @@ func (this *Pool) Update(maxIdle, maxActive int32) {
 			continue
 		default:
 			flag = false
+			break
 		}
 	}
 }
