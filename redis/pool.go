@@ -46,6 +46,25 @@ func NewPool(callback func() (redis.Conn, error), maxIdle, maxActive int32) *Poo
 	return pool
 }
 
+func (this *Pool) Update(maxIdle, maxActive int32) {
+	atomic.StoreInt32(&this.maxActive, maxActive)
+	if maxIdle == this.maxIdle {
+		return
+	}
+	this.maxIdle = maxIdle
+	elems := make(chan *RedisConn, maxIdle)
+	this.elems, elems = elems, this.elems
+	flag := true
+	for flag {
+		select {
+		case this.elems <- <-elems:
+			continue
+		default:
+			flag = false
+		}
+	}
+}
+
 func (this *Pool) Do(commandName string, args ...interface{}) (reply interface{}, err error) {
 	c, err := this.Get()
 	if err != nil {
