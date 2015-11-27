@@ -15,12 +15,11 @@ type RedisConn struct {
 func (this *RedisConn) Close() error {
 	if this.pool != nil {
 		if this.Conn.Err() != nil {
-			atomic.AddInt32(&this.curActive, -1)
+			atomic.AddInt32(&this.pool.curActive, -1)
 			return this.Conn.Close()
 		}
 		this.pool.Put(this)
 	} else {
-		atomic.AddInt32(&this.curActive, -1)
 		return this.Conn.Close()
 	}
 	return nil
@@ -94,9 +93,9 @@ func (this *Pool) Get() (*RedisConn, error) {
 			}, nil
 		} else {
 			fmt.Println("Error 0001 : too many active conn, maxActive=", this.maxActive)
-			e := <-this.elems, nil
-
-			return e
+			e := <-this.elems
+			fmt.Println("return e")
+			return e, nil
 		}
 	}
 }
