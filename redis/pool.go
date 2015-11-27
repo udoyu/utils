@@ -14,8 +14,8 @@ type RedisConn struct {
 
 func (this *RedisConn) Close() error {
 	if this.pool != nil {
+		atomic.AddInt32(&this.pool.curActive, -1)
 		if this.Conn.Err() != nil {
-			atomic.AddInt32(&this.pool.curActive, -1)
 			return this.Conn.Close()
 		}
 		this.pool.Put(this)
@@ -153,6 +153,7 @@ func (this *Pool) timerEvent() {
 			select {
 			case e := <-this.elems:
 				e.Do("PING")
+				e.Close()
 			default:
 				break
 			}
