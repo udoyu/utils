@@ -1,10 +1,10 @@
 package redis
 
 import (
-	"time"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"sync/atomic"
+	"time"
 )
 
 type RedisConn struct {
@@ -13,11 +13,14 @@ type RedisConn struct {
 }
 
 func (this *RedisConn) Close() error {
-	if this.Conn.Err() != nil {
-		return this.Conn.Close()
-	} else if this.pool != nil {
+	if this.pool != nil {
+		if this.Conn.Err() != nil {
+			atomic.AddInt32(&this.curActive, -1)
+			return this.Conn.Close()
+		}
 		this.pool.Put(this)
 	} else {
+		atomic.AddInt32(&this.curActive, -1)
 		return this.Conn.Close()
 	}
 	return nil
@@ -48,7 +51,7 @@ func NewPool(callback func() (redis.Conn, error), maxIdle, maxActive int32) *Poo
 	return pool
 }
 
-func (this *Pool) Do (commandName string, args ...interface{}) (reply interface{}, err error) {
+func (this *Pool) Do(commandName string, args ...interface{}) (reply interface{}, err error) {
 	c, err := this.Get()
 	if err != nil {
 		return nil, err
@@ -91,7 +94,9 @@ func (this *Pool) Get() (*RedisConn, error) {
 			}, nil
 		} else {
 			fmt.Println("Error 0001 : too many active conn, maxActive=", this.maxActive)
-			return <-this.elems, nil
+			e := <-this.elems, nil
+
+			return e
 		}
 	}
 }
@@ -145,13 +150,13 @@ func (this *Pool) timerEvent() {
 	defer timer.Stop()
 	for this.status == 0 {
 		select {
-			case <- timer.C :
-				select {
-					case e := <-this.elems :
-						e.Do("PING")
-					default :
-						break
-				}
+		case <-timer.C:
+			select {
+			case e := <-this.elems:
+				e.Do("PING")
+			default:
+				break
+			}
 		}
 	}
 }
