@@ -14,10 +14,6 @@ type RedisConn struct {
 
 func (this *RedisConn) Close() error {
 	if this.pool != nil {
-		atomic.AddInt32(&this.pool.curActive, -1)
-		if this.Conn.Err() != nil {
-			return this.Conn.Close()
-		}
 		this.pool.Put(this)
 	} else {
 		return this.Conn.Close()
@@ -62,74 +58,57 @@ func (this *Pool) Do(commandName string, args ...interface{}) (reply interface{}
 func (this *Pool) Put(elem *RedisConn) {
 	if atomic.LoadInt32(&this.status) != 0 {
 		elem.Conn.Close()
+		return
 	}
+	atomic.AddInt32(&this.curActive, -1)
+	if elem.Conn.Err() != nil {
+		elem.Conn.Close()
+		return
+	}
+
 	select {
 	case this.elems <- elem:
 		break
 	default:
-		atomic.AddInt32(&this.curActive, -1)
 		elem.Conn.Close()
 	}
+
 }
 
 func (this *Pool) Get() (*RedisConn, error) {
 	if atomic.LoadInt32(&this.status) != 0 {
 		return nil, fmt.Errorf("Error 0002 : this pool has been closed")
 	}
+	var (
+		conn *RedisConn
+		err  error
+	)
 	select {
 	case e := <-this.elems:
-		return e, nil
+		conn = e
 	default:
 		ca := atomic.LoadInt32(&this.curActive)
 		if ca < this.maxActive {
-			conn, err := this.callback()
+			var c redis.Conn
+			c, err = this.callback()
 			if err != nil {
-				return nil, err
+				break
 			}
-			atomic.AddInt32(&this.curActive, 1)
-			return &RedisConn{
-				Conn: conn,
+
+			conn = &RedisConn{
+				Conn: c,
 				pool: this,
-			}, nil
+			}
 		} else {
 			fmt.Println("Error 0001 : too many active conn, maxActive=", this.maxActive)
-			e := <-this.elems
+			conn = <-this.elems
 			fmt.Println("return e")
-			return e, nil
 		}
 	}
-}
-
-func (this *Pool) GetAsync() (*RedisConn, error) {
-	if atomic.LoadInt32(&this.status) != 0 {
-		return nil, fmt.Errorf("Error 0002 : this pool has been closed")
+	if conn != nil {
+		atomic.AddInt32(&this.curActive, 1)
 	}
-	select {
-	case e := <-this.elems:
-		return e, nil
-	default:
-		ca := atomic.LoadInt32(&this.curActive)
-		if ca < this.maxActive {
-			conn, err := this.callback()
-			if err != nil {
-				return nil, err
-			}
-			atomic.AddInt32(&this.curActive, 1)
-			return &RedisConn{
-				Conn: conn,
-				pool: this,
-			}, nil
-		} else {
-			return nil, fmt.Errorf("Error 0001 : too many active conn, maxActive=%d", this.maxActive)
-		}
-	}
-}
-
-func (this *Pool) GetSync() (*RedisConn, error) {
-	if atomic.LoadInt32(&this.status) != 0 {
-		return nil, fmt.Errorf("Error 0002 : this pool has been closed")
-	}
-	return <-this.elems, nil
+	return conn, err
 }
 
 func (this *Pool) Close() {
