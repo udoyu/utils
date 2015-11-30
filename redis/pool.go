@@ -9,7 +9,8 @@ import (
 
 type RedisConn struct {
 	redis.Conn
-	pool *Pool
+	pool   *Pool
+	status uint32
 }
 
 func (this *RedisConn) Close() error {
@@ -27,20 +28,22 @@ func (this RedisConn) Command(commandName string, args ...interface{}) *RedisRep
 }
 
 type Pool struct {
-	callback  func() (redis.Conn, error)
-	elems     chan *RedisConn
-	maxIdle   int32
-	maxActive int32
-	curActive int32
-	status    int32 //1-closed
+	callback    func() (redis.Conn, error)
+	elems       chan *RedisConn
+	activeElems chan *RedisConn
+	maxIdle     int32
+	maxActive   int32
+	curActive   int32
+	status      int32 //1-closed
 }
 
 func NewPool(callback func() (redis.Conn, error), maxIdle, maxActive int32) *Pool {
 	pool := &Pool{
-		callback:  callback,
-		elems:     make(chan *RedisConn, maxIdle),
-		maxIdle:   maxIdle,
-		maxActive: maxActive,
+		callback:    callback,
+		elems:       make(chan *RedisConn, maxIdle),
+		activeElems: make(chan *RedisConn, maxActive), //or maxActive - maxIdle
+		maxIdle:     maxIdle,
+		maxActive:   maxActive,
 	}
 	go pool.timerEvent()
 	return pool
@@ -54,15 +57,15 @@ func (this *Pool) Update(maxIdle, maxActive int32) {
 	this.maxIdle = maxIdle
 	elems := this.elems
 	this.elems = make(chan *RedisConn, maxIdle)
-	
+
 	flag := true
 	for flag {
 		select {
 		case e := <-elems:
 			select {
-				case this.elems <- e :
-				default :
-					flag = false
+			case this.elems <- e:
+			default:
+				flag = false
 			}
 		default:
 			flag = false
@@ -94,7 +97,11 @@ func (this *Pool) Put(elem *RedisConn) {
 	case this.elems <- elem:
 		break
 	default:
-		elem.Conn.Close()
+		select {
+		case this.activeElems <- elem:
+		default:
+			elem.Conn.Close()
+		}
 	}
 
 }
@@ -111,26 +118,33 @@ func (this *Pool) Get() (*RedisConn, error) {
 	case e := <-this.elems:
 		conn = e
 	default:
-		ca := atomic.LoadInt32(&this.curActive)
-		if ca < this.maxActive {
-			var c redis.Conn
-			c, err = this.callback()
-			if err != nil {
-				break
-			}
+		select {
+		case e := <-this.activeElems:
+			conn = e
+		default:
+			ca := atomic.LoadInt32(&this.curActive)
+			if ca < this.maxActive {
+				var c redis.Conn
+				c, err = this.callback()
+				if err != nil {
+					break
+				}
 
-			conn = &RedisConn{
-				Conn: c,
-				pool: this,
+				conn = &RedisConn{
+					Conn: c,
+					pool: this,
+				}
+			} else {
+				fmt.Println("Error 0001 : too many active conn, maxActive=", this.maxActive)
+				conn = <-this.elems
+				fmt.Println("return e")
 			}
-		} else {
-			fmt.Println("Error 0001 : too many active conn, maxActive=", this.maxActive)
-			conn = <-this.elems
-			fmt.Println("return e")
 		}
+
 	}
 	if conn != nil {
 		atomic.AddInt32(&this.curActive, 1)
+		conn.status = 0
 	}
 	return conn, err
 }
@@ -155,10 +169,24 @@ func (this *Pool) timerEvent() {
 		case <-timer.C:
 			select {
 			case e := <-this.elems:
-				e.Do("PING")
+				if e.status != 0 {
+					e.Do("PING")
+					e.status = 0
+				} else {
+					e.status++
+				}
 				e.Close()
 			default:
 				break
+			}
+			select {
+			case e := <-this.activeElems:
+				if e.status > 1 { //回收多余的空闲的链接
+					e.Conn.Close()
+				} else {
+					//e.Do("PING")
+					e.status++
+				}
 			}
 		}
 	}

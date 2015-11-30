@@ -1,12 +1,12 @@
 package redis
 
 const (
-	REDIS_REPLY_STRING = 1
-	REDIS_REPLY_ARRAY = 2
+	REDIS_REPLY_STRING  = 1
+	REDIS_REPLY_ARRAY   = 2
 	REDIS_REPLY_INTEGER = 3
-	REDIS_REPLY_NIL = 4
-	REDIS_REPLY_STATUS = 5
-	REDIS_REPLY_ERROR = 6
+	REDIS_REPLY_NIL     = 4
+	REDIS_REPLY_STATUS  = 5
+	REDIS_REPLY_ERROR   = 6
 )
 
 type RedisReply struct {
@@ -31,21 +31,21 @@ func NewRedisReply(re interface{}, err error) *RedisReply {
 		return reply
 	}
 	switch re.(type) {
-		case []uint8 :
-			reply.Type = REDIS_REPLY_STRING
-			reply.Str = string(re.([]uint8))
-			reply.Len = len(reply.Str)
-		case []interface{} :
-			reply.Type = REDIS_REPLY_ARRAY
-			reply.Elements = len(re.([]interface{}))
-			replys := make([]*RedisReply, reply.Elements)
-			for i, r := range (re.([]interface{})) {
-				replys[i] = NewRedisReply(r, nil)
-			}
-			reply.Element = replys
-		case int64 :
-			reply.Type = REDIS_REPLY_INTEGER
-			reply.Integer = re.(int64)
+	case []uint8:
+		reply.Type = REDIS_REPLY_STRING
+		reply.Str = string(re.([]uint8))
+		reply.Len = len(reply.Str)
+	case []interface{}:
+		reply.Type = REDIS_REPLY_ARRAY
+		reply.Elements = len(re.([]interface{}))
+		replys := make([]*RedisReply, reply.Elements)
+		for i, r := range re.([]interface{}) {
+			replys[i] = NewRedisReply(r, nil)
+		}
+		reply.Element = replys
+	case int64:
+		reply.Type = REDIS_REPLY_INTEGER
+		reply.Integer = re.(int64)
 	}
 	return reply
 }
