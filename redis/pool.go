@@ -164,7 +164,7 @@ func (this *Pool) Close() {
 func (this *Pool) timerEvent() {
 	timer := time.NewTicker(time.Second * 3)
 	defer timer.Stop()
-	for this.status == 0 {
+	for atomic.LoadInt32(&this.status) == 0 {
 		select {
 		case <-timer.C:
 			select {
