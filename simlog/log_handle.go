@@ -17,6 +17,7 @@ const (
 )
 
 var (
+	initFlag     bool        //是否已经初始化
 	splitFlag    bool        //是否根据文件大小切割
 	logbasepath  string      //日志根目录，传参设定
 	MAXFILESIZE  int64       //每个文件最大大小，传参设定
@@ -67,6 +68,9 @@ func GetLogName(path string) string {
 }
 
 func logInit(path string, maxday int, loglevel Level) {
+	if path == logbasepath && maxday == MAXLOGDAY && loglevel == loglevel {
+		return
+	}
 	logfilelock = new(sync.Mutex)
 	logfilelock.Lock()
 	defer logfilelock.Unlock()
@@ -92,7 +96,10 @@ func logInit(path string, maxday int, loglevel Level) {
 	}
 	SimLogger = log.New(logfile, "\n", log.Ldate|log.Ltime|log.Llongfile)
 	removelogdir(MAXLOGDAY, now)
-	go changelogdate()
+	if !initFlag {
+		initFlag = true
+		go changelogdate()
+	}
 }
 
 func setLogSplit(maxsize, maxindex int) {
