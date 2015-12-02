@@ -5,6 +5,10 @@ import (
 	"os"
 	"syscall"
 )
+var (
+	SIGUSR1 = syscall.Signal(10)
+	SIGUSR2 = syscall.Signal(12)
+)
 
 type SignalHandler struct {
 	signalMap map[os.Signal]func()
