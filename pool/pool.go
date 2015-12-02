@@ -163,7 +163,7 @@ func (this *Pool) timerEvent() {
 				} else {
 					e.Timeout()
 				}
-				e.Close()
+				e.Recyle()
 			default:
 				break
 			}
