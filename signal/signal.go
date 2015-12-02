@@ -1,6 +1,8 @@
 package signal
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os/signal"
 	"os"
 	"syscall"
@@ -23,6 +25,7 @@ func NewSignalHandler() SignalHandler {
 }
 
 func (this SignalHandler) Listen() {
+	ioutil.WriteFile("pid", []byte(fmt.Sprint(os.Getpid())), os.ModePerm)
 	for k, _ := range this.signalMap {
 		signal.Notify(this.signals, k)
 	}
