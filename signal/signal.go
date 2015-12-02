@@ -39,7 +39,7 @@ func (this SignalHandler) Register(sig int, callback func()) {
 }
 
 var (
-	signalHandler SignalHandler
+	signalHandler SignalHandler = NewSignalHandler()
 )
 
 func Register(sig int, callback func()) {
