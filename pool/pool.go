@@ -174,6 +174,7 @@ func (this *Pool) timerEvent() {
 				} else {
 					//e.Do("PING")
 					e.Timeout()
+					e.Recyle()
 				}
 			}
 		}

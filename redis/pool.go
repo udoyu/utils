@@ -185,6 +185,7 @@ func (this *Pool) timerEvent() {
 					e.Conn.Close()
 				} else {
 					//e.Do("PING")
+					e.Close()
 					e.status++
 				}
 			}
