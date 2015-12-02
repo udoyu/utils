@@ -1,10 +1,10 @@
 package pool
 
 import (
-	"time"
 	"fmt"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 type PoolElemInterface interface {
@@ -52,7 +52,7 @@ func (this *PoolElem) Timeout() {
 }
 
 func (this *PoolElem) IsTimeout() bool {
-	return atomic.LoadInt32(&this.status) > 1	
+	return atomic.LoadInt32(&this.status) > 1
 }
 
 type Pool struct {
@@ -63,7 +63,7 @@ type Pool struct {
 	maxActive   int32
 	curActive   int32
 	timer       int32
-	status int32 //0正常
+	status      int32 //0正常
 }
 
 func NewPool(callback func(*Pool) PoolElemInterface, maxIdle, maxActive, timer int32) *Pool {
