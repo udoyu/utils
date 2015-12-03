@@ -215,13 +215,16 @@ func (self *RedisCluster) RedisHandleForSlot(slot uint16) *RedisHandle {
 		return self.RandomRedisHandle()
 	}
 
-	_, cx_exists := self.Handles[node]
+	r, cx_exists := self.Handles[node]
 	// add to cluster if not in cluster
-	if !cx_exists {
-		self.Handles[node] = NewRedisHandle(node, self.MaxIdle, self.MaxActive, self.Debug)
-		// XXX consider returning random if failure
+	if cx_exists {
+		return r
+	} else {
+		r = NewRedisHandle(node, self.MaxIdle, self.MaxActive, self.Debug)
+		self.Handles[node] = r
 	}
-	return self.Handles[node]
+		// XXX consider returning random if failure
+	return r
 }
 
 func (self *RedisCluster) disconnectAll() {
