@@ -110,8 +110,22 @@ func (this *Pool) Put(elem PoolElemInterface) {
 		}
 	}
 }
-
 func (this *Pool) Get() (PoolElemInterface, error) {
+	var (
+		elem PoolElemInterface
+		err  error
+	)
+	for {
+		elem, err = this.get()
+		if elem != nil && elem.Err() != nil {
+			elem.Close()
+			continue
+		}
+		break
+	}
+	return elem, err
+}
+func (this *Pool) get() (PoolElemInterface, error) {
 	var (
 		conn PoolElemInterface
 		err  error
