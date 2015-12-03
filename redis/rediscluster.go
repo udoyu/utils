@@ -22,7 +22,7 @@ type RedisCluster struct {
 	Debug            bool
 }
 
-func NewRedisCluster(seed_redii []map[string]string, max_idle, max_active int, debug bool) RedisCluster {
+func NewRedisCluster(addrs []string, max_idle, max_active int, debug bool) RedisCluster {
 	cluster := RedisCluster{RefreshTableASAP: false,
 		SingleRedisMode: false,
 		SeedHosts:       make(map[string]bool),
@@ -35,12 +35,9 @@ func NewRedisCluster(seed_redii []map[string]string, max_idle, max_active int, d
 		fmt.Println("[RedisCluster], PID", os.Getpid(), "StartingNewRedisCluster")
 	}
 
-	for _, redis := range seed_redii {
-		for host, port := range redis {
-			label := host + ":" + port
-			cluster.SeedHosts[label] = true
-			cluster.Handles[label] = NewRedisHandle(host, port, max_idle, max_active, debug)
-		}
+	for _, label := range addrs {
+		cluster.SeedHosts[label] = true
+		cluster.Handles[label] = NewRedisHandle(label, max_idle, max_active, debug)
 	}
 
 	for addr, _ := range cluster.SeedHosts {
@@ -152,8 +149,7 @@ func (self *RedisCluster) switchToSingleModeIfNeeded() {
 func (self *RedisCluster) addRedisHandleIfNeeded(addr string) *RedisHandle {
 	_, handle_exists := self.Handles[addr]
 	if !handle_exists {
-		pieces := strings.Split(addr, ":")
-		self.Handles[addr] = NewRedisHandle(pieces[0], pieces[1], self.MaxIdle, self.MaxActive, self.Debug)
+		self.Handles[addr] = NewRedisHandle(addr, self.MaxIdle, self.MaxActive, self.Debug)
 	}
 	return self.Handles[addr]
 }
@@ -222,8 +218,7 @@ func (self *RedisCluster) RedisHandleForSlot(slot uint16) *RedisHandle {
 	_, cx_exists := self.Handles[node]
 	// add to cluster if not in cluster
 	if !cx_exists {
-		pieces := strings.Split(node, ":")
-		self.Handles[node] = NewRedisHandle(pieces[0], pieces[1], self.MaxIdle, self.MaxActive, self.Debug)
+		self.Handles[node] = NewRedisHandle(node, self.MaxIdle, self.MaxActive, self.Debug)
 		// XXX consider returning random if failure
 	}
 	return self.Handles[node]
@@ -316,7 +311,7 @@ func (self *RedisCluster) SendClusterCommand(flush bool, cmd string, args ...int
 			break
 		}
 		if self.Debug {
-			fmt.Println("[RedisCluster] Got Host/Port: ", redis.Host, redis.Port)
+			fmt.Println("[RedisCluster] Got addr: ", redis.Addr)
 		}
 
 		if asking {

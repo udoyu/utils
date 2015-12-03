@@ -5,20 +5,19 @@ import "os"
 import "fmt"
 
 type RedisHandle struct {
-	Host string
-	Port string
+	Addr string
 	Pool *Pool
 }
 
 // XXX: add some password protection
-func NewRedisHandle(host string, port string, max_idle, max_active int, debug bool) *RedisHandle {
+func NewRedisHandle(addr string, max_idle, max_active int, debug bool) *RedisHandle {
 	if debug {
 		fmt.Println("[RedisHandle] Opening New Handle For Pid:", os.Getpid())
 	}
-	return &RedisHandle{Host: host,
-		Port: port,
+	return &RedisHandle{
+		Addr : addr,
 		Pool: NewPool(func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", host+":"+port)
+			c, err := redis.Dial("tcp", addr)
 			if err != nil {
 				return nil, err
 			}
