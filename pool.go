@@ -146,6 +146,7 @@ func (this *Pool) get() (PoolElemInterface, error) {
 	}
 	if conn != nil {
 		atomic.AddInt32(&this.curActive, 1)
+		conn.Active()
 	}
 	return conn, err
 }
