@@ -159,6 +159,8 @@ func (this *Pool) Close() {
 		select {
 		case e := <-this.elems:
 			e.Conn.Close()
+		case e := <-this.activeElems:
+			e.Conn.Close()
 		default:
 			return
 		}
@@ -192,6 +194,7 @@ func (this *Pool) timerEvent() {
 					e.Close()
 					e.status++
 				}
+			default: break
 			}
 		}
 	}
