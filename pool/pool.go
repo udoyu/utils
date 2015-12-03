@@ -11,6 +11,7 @@ type PoolElemInterface interface {
 	Recyle() //回收
 	Close()
 	Err() error
+	SetErr(error)
 	Active()         //激活
 	Heartbeat()      //心跳
 	Timeout()        //设置超时，激活心跳
@@ -37,6 +38,12 @@ func (this *PoolElem) Err() error {
 	err := this.Error
 	this.Mux.Unlock()
 	return err
+}
+
+func (this *PoolElem) SetErr(err error) {
+	this.Mux.Lock()
+	this.Error = err
+	this.Mux.Unlock()
 }
 
 func (this *PoolElem) Active() {
