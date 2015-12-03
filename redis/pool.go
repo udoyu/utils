@@ -136,8 +136,12 @@ func (this *Pool) Get() (*RedisConn, error) {
 				}
 			} else {
 				fmt.Println("Error 0001 : too many active conn, maxActive=", this.maxActive)
-				conn = <-this.elems
-				fmt.Println("return e")
+				select {
+					case conn = <-this.elems :
+						fmt.Println("return e")
+					case <- time.After(time.Second * 3):
+						err = fmt.Errorf("Error 0003 : RedisPool Get timeout")
+				}
 			}
 		}
 
