@@ -1,4 +1,4 @@
-package pool
+package utils
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 )
 
 type PoolElemInterface interface {
-	Recyle() //回收
+	Recycle() //回收
 	Close()
 	Err() error
 	SetErr(error)
@@ -19,18 +19,9 @@ type PoolElemInterface interface {
 }
 
 type PoolElem struct {
-	Pool   *Pool
 	Error  error
 	Mux    sync.Mutex
 	status int32
-}
-
-func (this *PoolElem) Recyle() {
-	this.Pool.Put(this)
-}
-
-func (this *PoolElem) Close() {
-
 }
 
 func (this *PoolElem) Err() error {
@@ -63,7 +54,7 @@ func (this *PoolElem) IsTimeout() bool {
 }
 
 type Pool struct {
-	callback    func(*Pool) PoolElemInterface
+	callback    func(*Pool) (PoolElemInterface, error)
 	elems       chan PoolElemInterface
 	activeElems chan PoolElemInterface
 	maxIdle     int32
@@ -73,7 +64,7 @@ type Pool struct {
 	status      int32 //0正常
 }
 
-func NewPool(callback func(*Pool) PoolElemInterface, maxIdle, maxActive, timer int32) *Pool {
+func NewPool(callback func(*Pool) (PoolElemInterface, error), maxIdle, maxActive, timer int32) *Pool {
 	pool := &Pool{
 		callback:    callback,
 		elems:       make(chan PoolElemInterface, maxIdle),
@@ -118,6 +109,7 @@ func (this *Pool) Get() (PoolElemInterface, error) {
 	for {
 		elem, err = this.get()
 		if elem != nil && elem.Err() != nil {
+			atomic.AddInt32(&this.curActive, -1)
 			elem.Close()
 			continue
 		}
@@ -143,7 +135,7 @@ func (this *Pool) get() (PoolElemInterface, error) {
 		default:
 			ca := atomic.LoadInt32(&this.curActive)
 			if ca < this.maxActive {
-				conn = this.callback(this)
+				conn, err = this.callback(this)
 			} else {
 				fmt.Println("Error 0001 : too many active conn, maxActive=", this.maxActive)
 				conn = <-this.elems
@@ -184,7 +176,7 @@ func (this *Pool) timerEvent() {
 				} else {
 					e.Timeout()
 				}
-				e.Recyle()
+				e.Recycle()
 			default:
 				break
 			}
@@ -195,7 +187,7 @@ func (this *Pool) timerEvent() {
 				} else {
 					//e.Do("PING")
 					e.Timeout()
-					e.Recyle()
+					e.Recycle()
 				}
 			}
 		}
