@@ -156,6 +156,8 @@ func (this *Pool) Close() {
 		select {
 		case e := <-this.elems:
 			e.Close()
+		case e := <-this.activeElems:
+			e.Close()
 		default:
 			return
 		}
