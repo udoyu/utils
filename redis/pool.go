@@ -107,6 +107,23 @@ func (this *Pool) Put(elem *RedisConn) {
 }
 
 func (this *Pool) Get() (*RedisConn, error) {
+	var (
+		elem *RedisConn
+		err  error
+	)
+	for {
+		elem, err = this.get()
+		if elem != nil && elem.Err() != nil {
+			atomic.AddInt32(&this.curActive, -1)
+			elem.Conn.Close()
+			continue
+		}
+		break
+	}
+	return elem, err
+}
+
+func (this *Pool) get() (*RedisConn, error) {
 	if atomic.LoadInt32(&this.status) != 0 {
 		return nil, fmt.Errorf("Error 0002 : this pool has been closed")
 	}
