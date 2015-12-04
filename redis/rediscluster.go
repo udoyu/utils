@@ -58,6 +58,12 @@ func NewRedisCluster(addrs []string, max_idle, max_active int, debug bool) Redis
 	return cluster
 }
 
+func (self *RedisCluster) Update(max_idle, max_active int32) {
+	for _, rh := range self.Handles {
+		rh.Pool.Update(max_idle, max_active)
+	}
+}
+
 func (self *RedisCluster) hasClusterEnabled(node *RedisHandle) bool {
 	_, err := node.Do("CLUSTER", "INFO")
 	if err != nil {
