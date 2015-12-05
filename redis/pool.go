@@ -10,7 +10,7 @@ import (
 type RedisConn struct {
 	redis.Conn
 	pool   *Pool
-	status uint32
+	status int32
 }
 
 func (this *RedisConn) Close() error {
@@ -154,10 +154,10 @@ func (this *Pool) get() (*RedisConn, error) {
 			} else {
 				fmt.Println("Error 0001 : too many active conn, maxActive=", this.maxActive)
 				select {
-					case conn = <-this.elems :
-						fmt.Println("return e")
-					case <- time.After(time.Second * 3):
-						err = fmt.Errorf("Error 0003 : RedisPool Get timeout")
+				case conn = <-this.elems:
+					fmt.Println("return e")
+				case <-time.After(time.Second * 3):
+					err = fmt.Errorf("Error 0003 : RedisPool Get timeout")
 				}
 			}
 		}
@@ -165,7 +165,7 @@ func (this *Pool) get() (*RedisConn, error) {
 	}
 	if conn != nil {
 		atomic.AddInt32(&this.curActive, 1)
-		conn.status = 0
+		atomic.StoreInt32(&conn.status, 0)
 	}
 	return conn, err
 }
@@ -192,26 +192,21 @@ func (this *Pool) timerEvent() {
 		case <-timer.C:
 			select {
 			case e := <-this.elems:
-				if e.status != 0 {
-					e.Do("PING")
-					e.status = 0
-				} else {
-					e.status++
-				}
+				e.Do("PING")
 				e.Close()
 			default:
 				break
 			}
 			select {
 			case e := <-this.activeElems:
-				if e.status > 1 { //回收多余的空闲的链接
+				if atomic.LoadInt32(&e.status) != 0 { //回收多余的空闲的链接
 					e.Conn.Close()
 				} else {
-					//e.Do("PING")
+					atomic.AddInt32(&e.status, 1)
 					e.Close()
-					e.status++
 				}
-			default: break
+			default:
+				break
 			}
 		}
 	}
