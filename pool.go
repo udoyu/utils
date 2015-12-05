@@ -172,12 +172,7 @@ func (this *Pool) timerEvent() {
 		case <-timer.C:
 			select {
 			case e := <-this.elems:
-				if e.IsTimeout() {
-					e.Heartbeat()
-					e.Active()
-				} else {
-					e.Timeout()
-				}
+				e.Heartbeat()
 				e.Recycle()
 			default:
 				break
