@@ -15,7 +15,7 @@ func NewRedisHandle(addr string, max_idle, max_active int, debug bool) *RedisHan
 		fmt.Println("[RedisHandle] Opening New Handle For Pid:", os.Getpid())
 	}
 	return &RedisHandle{
-		Addr : addr,
+		Addr: addr,
 		Pool: NewPool(func() (redis.Conn, error) {
 			c, err := redis.Dial("tcp", addr)
 			if err != nil {

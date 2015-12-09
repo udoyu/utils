@@ -229,7 +229,7 @@ func (self *RedisCluster) RedisHandleForSlot(slot uint16) *RedisHandle {
 		r = NewRedisHandle(node, self.MaxIdle, self.MaxActive, self.Debug)
 		self.Handles[node] = r
 	}
-		// XXX consider returning random if failure
+	// XXX consider returning random if failure
 	return r
 }
 
