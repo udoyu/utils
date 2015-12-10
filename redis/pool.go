@@ -50,8 +50,8 @@ func NewPool(callback func() (redis.Conn, error), maxIdle, maxActive int32) *Poo
 }
 
 func (this *Pool) Update(maxIdle, maxActive int32) {
-	atomic.StoreInt32(&this.maxActive, maxActive)
-	if maxIdle == this.maxIdle {
+
+	if maxIdle == this.maxIdle && maxActive == this.maxActive {
 		return
 	}
 	this.maxIdle = maxIdle
@@ -64,6 +64,22 @@ func (this *Pool) Update(maxIdle, maxActive int32) {
 		case e := <-elems:
 			select {
 			case this.elems <- e:
+			default:
+				flag = false
+			}
+		default:
+			flag = false
+		}
+	}
+	actives := this.activeElems
+	this.activeElems = make(chan *RedisConn, maxActive)
+	atomic.StoreInt32(&this.maxActive, maxActive)
+	flag = true
+	for flag {
+		select {
+		case e := <-actives:
+			select {
+			case this.activeElems <- e:
 			default:
 				flag = false
 			}

@@ -79,6 +79,46 @@ func NewPool(callback func(*Pool) (PoolElemInterface, error), maxIdle, maxActive
 	return pool
 }
 
+func (this *Pool) Update(maxIdle, maxActive int32) {
+
+	if maxIdle == this.maxIdle && maxActive == this.maxActive {
+		return
+	}
+	this.maxIdle = maxIdle
+	elems := this.elems
+	this.elems = make(chan PoolElemInterface, maxIdle)
+
+	flag := true
+	for flag {
+		select {
+		case e := <-elems:
+			select {
+			case this.elems <- e:
+			default:
+				flag = false
+			}
+		default:
+			flag = false
+		}
+	}
+	actives := this.activeElems
+	this.activeElems = make(chan PoolElemInterface, maxActive)
+	atomic.StoreInt32(&this.maxActive, maxActive)
+	flag = true
+	for flag {
+		select {
+		case e := <-actives:
+			select {
+			case this.activeElems <- e:
+			default:
+				flag = false
+			}
+		default:
+			flag = false
+		}
+	}
+}
+
 func (this *Pool) Put(elem PoolElemInterface) {
 	if atomic.LoadInt32(&this.status) != 0 {
 		elem.Close()
