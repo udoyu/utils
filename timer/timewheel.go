@@ -43,8 +43,14 @@ func NewTimeWheel(precision time.Duration, interval int) *TimeWheel {
 				elems = ml.Elems
 				ml.Elems.Init()
 				ml.Unlock()
-				for e := elems.Front(); e != nil; e = e.Next() {
-					e.Value.(func())()
+				e := elems.Front()
+				if e != nil {
+					go func(e *list.Element) {
+						for ; e != nil; e = e.Next() {
+							e.Value.(func())()
+						}
+					}(e)
+
 				}
 			}
 		}
