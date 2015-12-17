@@ -26,7 +26,7 @@ func (this *TimerHandler) get(d time.Duration) *TimeWheel {
 
 func (this *TimerHandler) add(d time.Duration) *TimeWheel {
 	p := time.Second
-	i := 0
+	i := int64(0)
 	if d >= time.Second && d < time.Hour {
 		p = time.Second
 		i = int64(d) / int64(p)
