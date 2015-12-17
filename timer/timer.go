@@ -43,6 +43,7 @@ func (this *TimerHandler) add(d time.Duration) *TimeWheel {
 		p = time.Hour
 		i = int(d) / int(p)
 	}
+	if i == 0 {return nil}
 	tw := NewTimeWheel(p, int(i))
 	this.Lock()
 	this.timermap[d] = tw
@@ -55,5 +56,9 @@ func (this *TimerHandler) Add(d time.Duration, task func()) {
 	if tw == nil {
 		tw = this.add(d)
 	}
-	tw.Add(task)
+	if tw == nil {
+	    go task()
+	} else { 
+	    tw.Add(task)
+	}
 }
