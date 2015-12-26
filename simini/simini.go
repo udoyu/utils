@@ -39,12 +39,12 @@ func (p *SimIni) LoadFile(filename string) int {
 		if io.EOF == err {
 			flag = false
 		}
-		
+
 		line = strings.TrimLeft(line, " ")
 		if len(line) < 2 || '#' == line[0] || '\n' == line[0] || '\r' == line[0] {
 			continue
 		}
-		
+
 		length := len(line)
 		if line[length-2] == '\r' {
 			length -= 1
@@ -64,9 +64,11 @@ func (p *SimIni) LoadFile(filename string) int {
 			continue
 		}
 		v := strings.TrimLeft(val[1], " ")
-		v_len := len(v)-1
-		if !flag {v_len += 1}
-		p.sess_map_[curkey][strings.TrimRight(val[0], " ")] = v[0 : v_len]
+		v_len := len(v) - 1
+		if !flag {
+			v_len += 1
+		}
+		p.sess_map_[curkey][strings.TrimRight(val[0], " ")] = v[0:v_len]
 	}
 	p.loaded_ = true
 	return 0
@@ -99,7 +101,7 @@ func (p *SimIni) LoadFileExtern(filename string) int {
 		if len(line) < 2 || '#' == line[0] || '\n' == line[0] || '\r' == line[0] {
 			continue
 		}
-		
+
 		length := len(line)
 		if line[length-2] == '\r' {
 			length -= 1

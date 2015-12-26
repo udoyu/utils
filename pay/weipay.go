@@ -52,7 +52,7 @@ type UnifiedOrderReq struct {
 type UnifiedOrderRsp struct {
 	XMLName     xml.Name `xml:"xml" json:"-"`
 	Return_code string   `xml:"return_code" json:"return_code"`
-	Return_msg  string  `xml:"return_msg,omitempty" json:"return_msg,omitempty"`
+	Return_msg  string   `xml:"return_msg,omitempty" json:"return_msg,omitempty"`
 
 	Appid        string `xml:"appid,omitempty" json:"appid,omitempty"`
 	Mch_id       string `xml:"mch_id,omitempty" json:"mch_id,omitempty"`
@@ -151,10 +151,10 @@ func JsonToForm(v interface{}) url.Values {
 func (this WeiPay) UnifiedOrder(wpOptions UnifiedOrderReq) (*UnifiedOrderRsp, error) {
 	wpOptions.Appid = this.appid
 	wpOptions.Mch_id = this.mch_id
-	
+
 	wpOptions.Nonce_str = NonceStr()[:16]
 	wpOptions.Notify_url = this.notify_url
-	
+
 	wpOptions.Attach = "weipay"
 	form := AnyToForm(wpOptions)
 	form.Del("xml")

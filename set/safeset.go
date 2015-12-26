@@ -11,7 +11,7 @@ type SafeSet struct {
 
 func NewSafeSet() *SafeSet {
 	s := &SafeSet{
-		set:  NewSet(),
+		set: NewSet(),
 	}
 	return s
 }
@@ -53,4 +53,3 @@ func (this *SafeSet) ToSlice() []interface{} {
 	defer this.lock.RUnlock()
 	return this.set.ToSlice()
 }
-

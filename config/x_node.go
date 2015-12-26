@@ -1,8 +1,8 @@
 package config
 
 import (
-	"reflect"
 	"github.com/udoyu/utils"
+	"reflect"
 )
 
 /*
@@ -18,9 +18,9 @@ import (
 		</n2>
    </node>
 </root>
- */
+*/
 
-type XNodeInterface interface{
+type XNodeInterface interface {
 	Parse(string) error
 }
 
@@ -29,8 +29,8 @@ type XNodeParse struct {
 }
 
 func NewXNodeParse(xi XNodeInterface) *XNodeParse {
-	return &XNodeParse {
-		Parser : NewParser(newXParserI(xi)),
+	return &XNodeParse{
+		Parser: NewParser(newXParserI(xi)),
 	}
 }
 
@@ -40,7 +40,7 @@ type xParserI struct {
 
 func newXParserI(xi XNodeInterface) xParserI {
 	return xParserI{
-		xi : reflect.ValueOf(xi),
+		xi: reflect.ValueOf(xi),
 	}
 }
 
@@ -49,7 +49,7 @@ func (this xParserI) IsKey(str string) (key string, isEnd, ok bool) {
 		ok = true
 		if str[1] != '/' {
 			key = str[1 : len(str)-1]
-			
+
 		} else {
 			key = str[2 : len(str)-1]
 			isEnd = true
@@ -61,7 +61,7 @@ func (this xParserI) IsKey(str string) (key string, isEnd, ok bool) {
 func (this xParserI) Parse(node *Node, str string) error {
 	if str == "" {
 		return nil
-	} 
+	}
 	if node.Value() == nil {
 		node.SetValue(utils.New(this.xi))
 	}

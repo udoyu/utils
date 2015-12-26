@@ -133,12 +133,10 @@ func (this *Pool) Put(elem PoolElemInterface) {
 	select {
 	case this.elems <- elem:
 		break
+	case this.activeElems <- elem:
+		break
 	default:
-		select {
-		case this.activeElems <- elem:
-		default:
-			elem.Close()
-		}
+		elem.Close()
 	}
 }
 func (this *Pool) Get() (PoolElemInterface, error) {
@@ -168,19 +166,16 @@ func (this *Pool) get() (PoolElemInterface, error) {
 	select {
 	case e := <-this.elems:
 		conn = e
+	case e := <-this.activeElems:
+		conn = e
 	default:
-		select {
-		case e := <-this.activeElems:
-			conn = e
-		default:
-			ca := atomic.LoadInt32(&this.curActive)
-			if ca < this.maxActive {
-				conn, err = this.callback(this)
-			} else {
-				fmt.Println("Error 0001 : too many active conn, maxActive=", this.maxActive)
-				conn = <-this.elems
-				fmt.Println("return e")
-			}
+		ca := atomic.LoadInt32(&this.curActive)
+		if ca < this.maxActive {
+			conn, err = this.callback(this)
+		} else {
+			fmt.Println("Error 0001 : too many active conn, maxActive=", this.maxActive)
+			conn = <-this.elems
+			fmt.Println("return e")
 		}
 	}
 	if conn != nil {

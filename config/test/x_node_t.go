@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"github.com/udoyu/utils/config"
+	"strings"
 )
 
 /*
@@ -22,7 +22,7 @@ import (
 */
 
 type Node struct {
-	key string
+	key   string
 	value string
 }
 
@@ -31,12 +31,14 @@ type Nodes []Node
 func (this *Nodes) Parse(str string) error {
 	fmt.Println(str)
 	kv := strings.Split(str, "=")
-	if len(kv) < 2 {return nil}
-	*this = append(*this, Node{key:kv[0], value:kv[1]})
+	if len(kv) < 2 {
+		return nil
+	}
+	*this = append(*this, Node{key: kv[0], value: kv[1]})
 	return nil
 }
 
-func main () {
+func main() {
 	xp := config.NewXNodeParse(&Nodes{})
 	xp.LoadFile("xn.conf")
 	node := xp.Node()
@@ -47,7 +49,7 @@ func main () {
 		if n1 != nil {
 			fmt.Println(n1.Value())
 		}
-		
+
 		//遍历node所有节点
 		for k, v := range node.AllChild() {
 			fmt.Println(k, v.Value())

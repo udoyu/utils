@@ -112,12 +112,10 @@ func (this *Pool) Put(elem *RedisConn) {
 	select {
 	case this.elems <- elem:
 		break
+	case this.activeElems <- elem:
+		break
 	default:
-		select {
-		case this.activeElems <- elem:
-		default:
-			elem.Conn.Close()
-		}
+		elem.Conn.Close()
 	}
 
 }
@@ -150,31 +148,28 @@ func (this *Pool) get() (*RedisConn, error) {
 	select {
 	case e := <-this.elems:
 		conn = e
+	case e := <-this.activeElems:
+		conn = e
 	default:
-		select {
-		case e := <-this.activeElems:
-			conn = e
-		default:
-			ca := atomic.LoadInt32(&this.curActive)
-			if ca < this.maxActive {
-				var c redis.Conn
-				c, err = this.callback()
-				if err != nil {
-					break
-				}
+		ca := atomic.LoadInt32(&this.curActive)
+		if ca < this.maxActive {
+			var c redis.Conn
+			c, err = this.callback()
+			if err != nil {
+				break
+			}
 
-				conn = &RedisConn{
-					Conn: c,
-					pool: this,
-				}
-			} else {
-				fmt.Println("Error 0001 : too many active conn, maxActive=", this.maxActive)
-				select {
-				case conn = <-this.elems:
-					fmt.Println("return e")
-				case <-time.After(time.Second * 3):
-					err = fmt.Errorf("Error 0003 : RedisPool Get timeout")
-				}
+			conn = &RedisConn{
+				Conn: c,
+				pool: this,
+			}
+		} else {
+			fmt.Println("Error 0001 : too many active conn, maxActive=", this.maxActive)
+			select {
+			case conn = <-this.elems:
+				fmt.Println("return e")
+			case <-time.After(time.Second * 3):
+				err = fmt.Errorf("Error 0003 : RedisPool Get timeout")
 			}
 		}
 

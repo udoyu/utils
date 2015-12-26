@@ -48,11 +48,7 @@ func (this QueryI) Query(t reflect.StructField) string {
 	return this.FormValue(form)
 }
 
- */
-
-
-
-
+*/
 
 func StructTravel(v interface{},
 	qi QueryInterface,
@@ -145,11 +141,11 @@ var (
 	UINT32_PTR = reflect.TypeOf(Uint32(uint32(0)))
 	UINT64_PTR = reflect.TypeOf(Uint64(uint64(0)))
 	BOOL_PTR   = reflect.TypeOf(Bool(false))
-	
+
 	STRING = reflect.TypeOf("")
-    INT32  = reflect.TypeOf(int32(0))
-    INT64  = reflect.TypeOf(int64(0))
-    UINT32 = reflect.TypeOf(uint32(0))
-    UINT64 = reflect.TypeOf(uint64(0))
-    BOOL   = reflect.TypeOf(false)
+	INT32  = reflect.TypeOf(int32(0))
+	INT64  = reflect.TypeOf(int64(0))
+	UINT32 = reflect.TypeOf(uint32(0))
+	UINT64 = reflect.TypeOf(uint64(0))
+	BOOL   = reflect.TypeOf(false)
 )

@@ -56,4 +56,3 @@ func (this *Node) AddChild(key string, c *Node) *Node {
 func (this *Node) SetValue(value interface{}) {
 	this.value = value
 }
-

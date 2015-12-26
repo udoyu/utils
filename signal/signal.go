@@ -3,10 +3,11 @@ package signal
 import (
 	"fmt"
 	"io/ioutil"
-	"os/signal"
 	"os"
+	"os/signal"
 	"syscall"
 )
+
 var (
 	SIGUSR1 = syscall.Signal(10)
 	SIGUSR2 = syscall.Signal(12)
@@ -14,13 +15,13 @@ var (
 
 type SignalHandler struct {
 	signalMap map[os.Signal]func()
-	signals chan os.Signal
+	signals   chan os.Signal
 }
 
 func NewSignalHandler() SignalHandler {
 	return SignalHandler{
-		signalMap : make(map[os.Signal]func()),
-		signals : make(chan os.Signal),
+		signalMap: make(map[os.Signal]func()),
+		signals:   make(chan os.Signal),
 	}
 }
 
@@ -52,4 +53,3 @@ func Register(sig int, callback func()) {
 func Listen() {
 	signalHandler.Listen()
 }
-

@@ -15,13 +15,13 @@ type ParseInterface interface {
 
 type Parser struct {
 	node *Node
-	pi ParseInterface
+	pi   ParseInterface
 }
 
 func NewParser(pi ParseInterface) *Parser {
 	return &Parser{
-		node : NewNode("", nil),
-		pi : pi,
+		node: NewNode("", nil),
+		pi:   pi,
 	}
 }
 
@@ -32,7 +32,9 @@ func (this *Parser) Node() *Node {
 func (this *Parser) ParseString(str string) error {
 	if key, isEnd, ok := this.pi.IsKey(str); ok {
 		if !isEnd {
-			if key == "" {return errors.New("Error 1001:key is empty")}
+			if key == "" {
+				return errors.New("Error 1001:key is empty")
+			}
 			if this.node == nil {
 				this.node = NewNode(key, nil)
 			} else {
@@ -49,7 +51,7 @@ func (this *Parser) ParseString(str string) error {
 	} else {
 		return this.pi.Parse(this.node, str)
 	}
-	
+
 	return nil
 }
 
@@ -87,4 +89,3 @@ func (this *Parser) LoadFile(filename string) error {
 	}
 	return nil
 }
-

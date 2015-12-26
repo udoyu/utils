@@ -1,6 +1,6 @@
 package utils
 
-import(
+import (
 	"reflect"
 )
 
@@ -9,9 +9,9 @@ import(
 //*ps = "hello"
 //fmt.Println(*ps)
 func New(v reflect.Value) interface{} {
-        r := reflect.New(v.Type())
-        if v.Kind() == reflect.Ptr {
-                r.Elem().Set(reflect.New(v.Elem().Type()))
-        }
-        return r.Elem().Interface()
+	r := reflect.New(v.Type())
+	if v.Kind() == reflect.Ptr {
+		r.Elem().Set(reflect.New(v.Elem().Type()))
+	}
+	return r.Elem().Interface()
 }

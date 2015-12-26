@@ -1,13 +1,13 @@
 package xrsa
 
 import (
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"crypto"
-	"crypto/x509"
-	"crypto/rsa"
-	"crypto/rand"
 	"strconv"
 )
 
@@ -54,7 +54,7 @@ func RsaPriKeyFromPEM(priKeyPEM []byte) (*rsa.PrivateKey, error) {
 }
 
 func RsaPubKeyFromPEM(pubKeyPEM []byte) (*rsa.PublicKey, error) {
-	PEMBlock,_ := pem.Decode(pubKeyPEM)
+	PEMBlock, _ := pem.Decode(pubKeyPEM)
 	if PEMBlock == nil {
 		return nil, errors.New("Error 200 : pem.Decode failed")
 	}
