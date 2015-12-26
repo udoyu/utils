@@ -56,22 +56,22 @@ func (this *PoolElem) IsTimeout() bool {
 type Pool struct {
 	callback    func(*Pool) (PoolElemInterface, error)
 	elems       chan PoolElemInterface
-	activeElems chan PoolElemInterface
 	maxIdle     int32
 	maxActive   int32
 	curActive   int32
 	timer       int32
 	status      int32 //0正常
+	elemsSize   int32
+	timerStatus int32
 }
 
 func NewPool(callback func(*Pool) (PoolElemInterface, error), maxIdle, maxActive, timer int32) *Pool {
 	pool := &Pool{
-		callback:    callback,
-		elems:       make(chan PoolElemInterface, maxIdle),
-		activeElems: make(chan PoolElemInterface, maxActive),
-		maxIdle:     maxIdle,
-		maxActive:   maxActive,
-		timer:       timer,
+		callback:  callback,
+		elems:     make(chan PoolElemInterface, maxActive),
+		maxIdle:   maxIdle,
+		maxActive: maxActive,
+		timer:     timer,
 	}
 	if timer > 0 {
 		go pool.timerEvent()
@@ -86,14 +86,15 @@ func (this *Pool) Update(maxIdle, maxActive int32) {
 	}
 	this.maxIdle = maxIdle
 	elems := this.elems
-	this.elems = make(chan PoolElemInterface, maxIdle)
-
+	this.elems = make(chan PoolElemInterface, maxActive)
+	atomic.StoreInt32(&this.elemsSize, 0)
 	flag := true
 	for flag {
 		select {
 		case e := <-elems:
 			select {
 			case this.elems <- e:
+				atomic.AddInt32(&this.elemsSize, 1)
 			default:
 				flag = false
 			}
@@ -101,22 +102,7 @@ func (this *Pool) Update(maxIdle, maxActive int32) {
 			flag = false
 		}
 	}
-	actives := this.activeElems
-	this.activeElems = make(chan PoolElemInterface, maxActive)
 	atomic.StoreInt32(&this.maxActive, maxActive)
-	flag = true
-	for flag {
-		select {
-		case e := <-actives:
-			select {
-			case this.activeElems <- e:
-			default:
-				flag = false
-			}
-		default:
-			flag = false
-		}
-	}
 }
 
 func (this *Pool) Put(elem PoolElemInterface) {
@@ -124,18 +110,19 @@ func (this *Pool) Put(elem PoolElemInterface) {
 		elem.Close()
 		return
 	}
-	atomic.AddInt32(&this.curActive, -1)
+
 	if elem.Err() != nil {
+		atomic.AddInt32(&this.curActive, -1)
 		elem.Close()
 		return
 	}
 
 	select {
 	case this.elems <- elem:
-		break
-	case this.activeElems <- elem:
+		atomic.AddInt32(&this.elemsSize, 1)
 		break
 	default:
+		atomic.AddInt32(&this.curActive, -1)
 		elem.Close()
 	}
 }
@@ -166,20 +153,20 @@ func (this *Pool) get() (PoolElemInterface, error) {
 	select {
 	case e := <-this.elems:
 		conn = e
-	case e := <-this.activeElems:
-		conn = e
+		atomic.AddInt32(&this.elemsSize, -1)
 	default:
 		ca := atomic.LoadInt32(&this.curActive)
 		if ca < this.maxActive {
 			conn, err = this.callback(this)
+			atomic.AddInt32(&this.curActive, 1)
 		} else {
 			fmt.Println("Error 0001 : too many active conn, maxActive=", this.maxActive)
 			conn = <-this.elems
+			atomic.AddInt32(&this.elemsSize, -1)
 			fmt.Println("return e")
 		}
 	}
 	if conn != nil {
-		atomic.AddInt32(&this.curActive, 1)
 		conn.Active()
 	}
 	return conn, err
@@ -190,8 +177,6 @@ func (this *Pool) Close() {
 	for {
 		select {
 		case e := <-this.elems:
-			e.Close()
-		case e := <-this.activeElems:
 			e.Close()
 		default:
 			return
@@ -205,22 +190,28 @@ func (this *Pool) timerEvent() {
 	for atomic.LoadInt32(&this.status) == 0 {
 		select {
 		case <-timer.C:
+			if atomic.LoadInt32(&this.elemsSize) > this.maxIdle {
+				this.timerStatus++
+				if this.timerStatus > 3 {
+					select {
+					case e := <-this.elems:
+						atomic.AddInt32(&this.curActive, -1)
+						atomic.AddInt32(&this.elemsSize, -1)
+						e.Close()
+					default:
+						this.timerStatus = 0
+					}
+				} else {
+					this.timerStatus = 0
+				}
+			}
 			select {
 			case e := <-this.elems:
+				atomic.AddInt32(&this.elemsSize, -1)
 				e.Heartbeat()
 				e.Recycle()
 			default:
 				break
-			}
-			select {
-			case e := <-this.activeElems:
-				if e.IsTimeout() { //回收多余的空闲的链接
-					e.Close()
-				} else {
-					//e.Do("PING")
-					e.Timeout()
-					e.Recycle()
-				}
 			}
 		}
 	}

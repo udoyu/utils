@@ -9,8 +9,8 @@ import (
 
 type RedisConn struct {
 	redis.Conn
-	pool   *Pool
-	status int32
+	pool *Pool
+	//	status int32
 }
 
 func (this *RedisConn) Close() error {
@@ -30,20 +30,20 @@ func (this RedisConn) Command(commandName string, args ...interface{}) *RedisRep
 type Pool struct {
 	callback    func() (redis.Conn, error)
 	elems       chan *RedisConn
-	activeElems chan *RedisConn
 	maxIdle     int32
 	maxActive   int32
 	curActive   int32
+	elemsSize   int32
 	status      int32 //1-closed
+	timerStatus int32
 }
 
 func NewPool(callback func() (redis.Conn, error), maxIdle, maxActive int32) *Pool {
 	pool := &Pool{
-		callback:    callback,
-		elems:       make(chan *RedisConn, maxIdle),
-		activeElems: make(chan *RedisConn, maxActive), //or maxActive - maxIdle
-		maxIdle:     maxIdle,
-		maxActive:   maxActive,
+		callback:  callback,
+		elems:     make(chan *RedisConn, maxActive),
+		maxIdle:   maxIdle,
+		maxActive: maxActive,
 	}
 	go pool.timerEvent()
 	return pool
@@ -56,14 +56,15 @@ func (this *Pool) Update(maxIdle, maxActive int32) {
 	}
 	this.maxIdle = maxIdle
 	elems := this.elems
-	this.elems = make(chan *RedisConn, maxIdle)
-
+	this.elems = make(chan *RedisConn, maxActive)
+	atomic.StoreInt32(&this.elemsSize, 0)
 	flag := true
 	for flag {
 		select {
 		case e := <-elems:
 			select {
 			case this.elems <- e:
+				atomic.AddInt32(&this.elemsSize, 1)
 			default:
 				flag = false
 			}
@@ -71,22 +72,7 @@ func (this *Pool) Update(maxIdle, maxActive int32) {
 			flag = false
 		}
 	}
-	actives := this.activeElems
-	this.activeElems = make(chan *RedisConn, maxActive)
 	atomic.StoreInt32(&this.maxActive, maxActive)
-	flag = true
-	for flag {
-		select {
-		case e := <-actives:
-			select {
-			case this.activeElems <- e:
-			default:
-				flag = false
-			}
-		default:
-			flag = false
-		}
-	}
 }
 
 func (this *Pool) Do(commandName string, args ...interface{}) (reply interface{}, err error) {
@@ -103,21 +89,21 @@ func (this *Pool) Put(elem *RedisConn) {
 		elem.Conn.Close()
 		return
 	}
-	atomic.AddInt32(&this.curActive, -1)
+
 	if elem.Conn.Err() != nil {
+		atomic.AddInt32(&this.curActive, -1)
 		elem.Conn.Close()
 		return
 	}
 
 	select {
 	case this.elems <- elem:
-		break
-	case this.activeElems <- elem:
+		atomic.AddInt32(&this.elemsSize, 1)
 		break
 	default:
 		elem.Conn.Close()
+		atomic.AddInt32(&this.curActive, -1)
 	}
-
 }
 
 func (this *Pool) Get() (*RedisConn, error) {
@@ -148,8 +134,7 @@ func (this *Pool) get() (*RedisConn, error) {
 	select {
 	case e := <-this.elems:
 		conn = e
-	case e := <-this.activeElems:
-		conn = e
+		atomic.AddInt32(&this.elemsSize, -1)
 	default:
 		ca := atomic.LoadInt32(&this.curActive)
 		if ca < this.maxActive {
@@ -163,10 +148,12 @@ func (this *Pool) get() (*RedisConn, error) {
 				Conn: c,
 				pool: this,
 			}
+			atomic.AddInt32(&this.curActive, 1)
 		} else {
 			fmt.Println("Error 0001 : too many active conn, maxActive=", this.maxActive)
 			select {
 			case conn = <-this.elems:
+				atomic.AddInt32(&this.elemsSize, -1)
 				fmt.Println("return e")
 			case <-time.After(time.Second * 3):
 				err = fmt.Errorf("Error 0003 : RedisPool Get timeout")
@@ -174,10 +161,9 @@ func (this *Pool) get() (*RedisConn, error) {
 		}
 
 	}
-	if conn != nil {
-		atomic.AddInt32(&this.curActive, 1)
-		atomic.StoreInt32(&conn.status, 0)
-	}
+	//	if conn != nil {
+	//		atomic.StoreInt32(&conn.status, 0)
+	//	}
 	return conn, err
 }
 
@@ -186,8 +172,6 @@ func (this *Pool) Close() {
 	for {
 		select {
 		case e := <-this.elems:
-			e.Conn.Close()
-		case e := <-this.activeElems:
 			e.Conn.Close()
 		default:
 			return
@@ -199,23 +183,29 @@ func (this *Pool) timerEvent() {
 	timer := time.NewTicker(time.Second * 3)
 	defer timer.Stop()
 	for atomic.LoadInt32(&this.status) == 0 {
+
 		select {
 		case <-timer.C:
-			select {
-			case e := <-this.elems:
-				e.Do("PING")
-				e.Close()
-			default:
-				break
+			if atomic.LoadInt32(&this.elemsSize) > this.maxIdle {
+				this.timerStatus++
+				if this.timerStatus > 3 {
+					select {
+					case e := <-this.elems:
+						atomic.AddInt32(&this.curActive, -1)
+						atomic.AddInt32(&this.elemsSize, -1)
+						e.Conn.Close()
+					default:
+						this.timerStatus = 0
+					}
+				} else {
+					this.timerStatus = 0
+				}
 			}
 			select {
-			case e := <-this.activeElems:
-				if atomic.LoadInt32(&e.status) != 0 { //回收多余的空闲的链接
-					e.Conn.Close()
-				} else {
-					atomic.AddInt32(&e.status, 1)
-					e.Close()
-				}
+			case e := <-this.elems:
+				atomic.AddInt32(&this.elemsSize, -1)
+				e.Do("PING")
+				e.Close()
 			default:
 				break
 			}
