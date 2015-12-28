@@ -58,6 +58,7 @@ func (this *Pool) Update(maxIdle, maxActive int32) {
 	elems := this.elems
 	this.elems = make(chan *RedisConn, maxActive)
 	atomic.StoreInt32(&this.elemsSize, 0)
+	atomic.StoreInt32(&this.curActive, 0)
 	flag := true
 	for flag {
 		select {
@@ -65,6 +66,7 @@ func (this *Pool) Update(maxIdle, maxActive int32) {
 			select {
 			case this.elems <- e:
 				atomic.AddInt32(&this.elemsSize, 1)
+				atomic.StoreInt32(&this.curActive, 1)
 			default:
 				flag = false
 			}
@@ -154,7 +156,6 @@ func (this *Pool) get() (*RedisConn, error) {
 			select {
 			case conn = <-this.elems:
 				atomic.AddInt32(&this.elemsSize, -1)
-				fmt.Println("return e")
 			case <-time.After(time.Second * 3):
 				err = fmt.Errorf("Error 0003 : RedisPool Get timeout")
 			}
