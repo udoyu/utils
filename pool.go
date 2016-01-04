@@ -133,7 +133,7 @@ func (this *Pool) Get() (PoolElemInterface, error) {
 	)
 	for {
 		elem, err = this.get()
-		if elem != nil && elem.Err() != nil {
+		if err == nil && elem != nil && elem.Err() != nil {
 			atomic.AddInt32(&this.curActive, -1)
 			elem.Close()
 			continue
@@ -158,7 +158,9 @@ func (this *Pool) get() (PoolElemInterface, error) {
 		ca := atomic.LoadInt32(&this.curActive)
 		if ca < this.maxActive {
 			conn, err = this.callback(this)
-			atomic.AddInt32(&this.curActive, 1)
+			if err == nil {
+				atomic.AddInt32(&this.curActive, 1)
+			} 
 		} else {
 			fmt.Println("Error 0001 : too many active conn, maxActive=", this.maxActive)
 			select {
@@ -170,7 +172,7 @@ func (this *Pool) get() (PoolElemInterface, error) {
 			}
 		}
 	}
-	if conn != nil {
+	if err == nil && conn != nil {
 		conn.Active()
 	}
 	return conn, err
