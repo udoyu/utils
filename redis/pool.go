@@ -181,7 +181,7 @@ func (this *Pool) Close() {
 }
 
 func (this *Pool) timerEvent() {
-	timer := time.NewTicker(time.Second * 3)
+	timer := time.NewTicker(time.Second * 1)
 	defer timer.Stop()
 	for atomic.LoadInt32(&this.status) == 0 {
 
@@ -189,7 +189,7 @@ func (this *Pool) timerEvent() {
 		case <-timer.C:
 			if atomic.LoadInt32(&this.elemsSize) > this.maxIdle {
 				this.timerStatus++
-				if this.timerStatus > 3 {
+				if this.timerStatus > 10 {
 					select {
 					case e := <-this.elems:
 						atomic.AddInt32(&this.curActive, -1)
@@ -202,13 +202,18 @@ func (this *Pool) timerEvent() {
 					this.timerStatus = 0
 				}
 			}
-			select {
-			case e := <-this.elems:
-				atomic.AddInt32(&this.elemsSize, -1)
-				e.Do("PING")
-				e.Close()
-			default:
-				break
+			flag := true
+			n := int(this.maxActive/20 + 1)
+			for i:=0; (i<n) && flag; i++ {
+				select {
+				case e := <-this.elems:
+					atomic.AddInt32(&this.elemsSize, -1)
+					e.Do("PING")
+					e.Close()
+				default:
+					flag = false
+					break
+				}
 			}
 		}
 	}
