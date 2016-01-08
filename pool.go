@@ -79,8 +79,29 @@ func NewPool(callback func(*Pool) (PoolElemInterface, error), maxIdle, maxActive
 	return pool
 }
 
-func (this *Pool) Update(maxIdle, maxActive int32) {
+func (this *Pool) Close() {
+	if this.IsClosed() {
+		return
+	}
+	atomic.StoreInt32(&this.status, 1)
+	for {
+		select {
+		case e := <-this.elems:
+			e.Close()
+		default:
+			return
+		}
+	}
+}
 
+func (this *Pool) IsClosed() bool {
+	return atomic.LoadInt32(&this.status) != 0
+}
+
+func (this *Pool) Update(maxIdle, maxActive int32) {
+	if this.IsClosed() {
+		return
+	}
 	if maxIdle == this.maxIdle && maxActive == this.maxActive {
 		return
 	}
@@ -106,7 +127,7 @@ func (this *Pool) Update(maxIdle, maxActive int32) {
 }
 
 func (this *Pool) Put(elem PoolElemInterface) {
-	if atomic.LoadInt32(&this.status) != 0 {
+	if this.IsClosed() {
 		elem.Close()
 		return
 	}
@@ -127,6 +148,9 @@ func (this *Pool) Put(elem PoolElemInterface) {
 	}
 }
 func (this *Pool) Get() (PoolElemInterface, error) {
+	if this.IsClosed() {
+		return nil, fmt.Errorf("Error pool has been closed!")
+	}
 	var (
 		elem PoolElemInterface
 		err  error
@@ -160,15 +184,15 @@ func (this *Pool) get() (PoolElemInterface, error) {
 			conn, err = this.callback(this)
 			if err == nil {
 				atomic.AddInt32(&this.curActive, 1)
-			} 
+			}
 		} else {
 			fmt.Println("Error 0001 : too many active conn, maxActive=", this.maxActive)
 			select {
-				case conn = <-this.elems :
-					atomic.AddInt32(&this.elemsSize, -1)
-					fmt.Println("return e")
-				case <-time.After(time.Second*2) :
-					return nil, fmt.Errorf("Error 0001 : too many active conn, maxActive=%d", this.maxActive)
+			case conn = <-this.elems:
+				atomic.AddInt32(&this.elemsSize, -1)
+				fmt.Println("return e")
+			case <-time.After(time.Second * 2):
+				return nil, fmt.Errorf("Error 0001 : too many active conn, maxActive=%d", this.maxActive)
 			}
 		}
 	}
@@ -178,22 +202,10 @@ func (this *Pool) get() (PoolElemInterface, error) {
 	return conn, err
 }
 
-func (this *Pool) Close() {
-	atomic.StoreInt32(&this.status, 1)
-	for {
-		select {
-		case e := <-this.elems:
-			e.Close()
-		default:
-			return
-		}
-	}
-}
-
 func (this *Pool) timerEvent() {
 	timer := time.NewTicker(time.Second * time.Duration(this.timer))
 	defer timer.Stop()
-	for atomic.LoadInt32(&this.status) == 0 {
+	for !this.IsClosed() {
 		select {
 		case <-timer.C:
 			if atomic.LoadInt32(&this.elemsSize) > this.maxIdle {
@@ -211,13 +223,18 @@ func (this *Pool) timerEvent() {
 					this.timerStatus = 0
 				}
 			}
-			select {
-			case e := <-this.elems:
-				atomic.AddInt32(&this.elemsSize, -1)
-				e.Heartbeat()
-				e.Recycle()
-			default:
-				break
+			n := (atomic.LoadInt32(&this.elemsSize)/30 + 1)
+			flag := true
+			for i := 0; i < n && flat; i++ {
+				select {
+				case e := <-this.elems:
+					atomic.AddInt32(&this.elemsSize, -1)
+					e.Heartbeat()
+					e.Recycle()
+				default:
+					flag = false
+					break
+				}
 			}
 		}
 	}
