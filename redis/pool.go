@@ -203,7 +203,7 @@ func (this *Pool) timerEvent() {
 				}
 			}
 			flag := true
-			n := int(this.maxActive/20 + 1)
+			n := int(this.elemsSize/20 + 1)
 			for i:=0; (i<n) && flag; i++ {
 				select {
 				case e := <-this.elems:
