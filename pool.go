@@ -223,9 +223,9 @@ func (this *Pool) timerEvent() {
 					this.timerStatus = 0
 				}
 			}
-			n := (atomic.LoadInt32(&this.elemsSize)/30 + 1)
+			n := int(atomic.LoadInt32(&this.elemsSize)/30 + 1)
 			flag := true
-			for i := 0; i < n && flat; i++ {
+			for i := 0; i < n && flag; i++ {
 				select {
 				case e := <-this.elems:
 					atomic.AddInt32(&this.elemsSize, -1)
