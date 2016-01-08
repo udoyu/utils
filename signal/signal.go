@@ -11,6 +11,7 @@ import (
 var (
 	SIGUSR1 = syscall.Signal(10)
 	SIGUSR2 = syscall.Signal(12)
+	CURPID = 0
 )
 
 type SignalHandler struct {
@@ -26,7 +27,8 @@ func NewSignalHandler() SignalHandler {
 }
 
 func (this SignalHandler) Listen() {
-	ioutil.WriteFile("pid", []byte(fmt.Sprint(os.Getpid())), os.ModePerm)
+	CURPID = os.Getpid()
+	ioutil.WriteFile("pid", []byte(fmt.Sprint(CURPID)), os.ModePerm)
 	for k, _ := range this.signalMap {
 		signal.Notify(this.signals, k)
 	}
