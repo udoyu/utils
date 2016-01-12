@@ -148,8 +148,8 @@ func changelogdate() {
 				//将全局信息重置
 				logdate = now
 				logfilepath = logbasepath + MakeLogPath(now) + "/"
-//				//logfileindex = 0
-//				//logfileindex++
+				logfileindex = 0
+				logfileindex++
 
 //				err := MakeDirAll(logfilepath)
 //				if nil != err {
@@ -178,16 +178,14 @@ func changelogfile() {
 			now := time.Now()
 			logdate = now
 			logfilepath = logbasepath + MakeLogPath(now) + "/"
-			//logfileindex = 0
-			//logfileindex++
 	
 			if err := MakeDirAll(logfilepath); err != nil {
 				fmt.Printf("[simlog]ChangeLogPathOrFile|MakeDirAll %s|%s \n", logfilepath, err.Error())
 				//os.Exit(-1)
 				break
 			}
-			old := logfilepath + fmt.Sprintf("all.log.%04d%02d%02d-%02d%02d%02d",
-				now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
+			old := logfilepath + fmt.Sprintf("all.log.%04d%02d%02d-%02d%02d%02d.%d",
+				now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second(), logfileindex)
 			if err := os.Rename(logfilename, old); err != nil {
 				fmt.Printf("Rename %s -> %s failed err=%s", logfilename, old, err.Error())
 				break
