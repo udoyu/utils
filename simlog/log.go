@@ -25,16 +25,16 @@ const (
 
 var (
 	MAX_DATA_SIZE = 4096
-	levelName    = []string{"[TRACE]", "[DEBUG]", "[INFO]", "[WARN]", "[ERROR]", "[CRITICAL]"}
-	level        = LevelTrace //日志等级，传参设定
-	SimLogger    *log.Logger
-	logSplitFunc func()                 = func() {}
-	Trace        func(v ...interface{}) = func(v ...interface{}) { PrintFunc(LevelTrace, v...) }
-	Debug        func(v ...interface{}) = func(v ...interface{}) { PrintFunc(LevelDebug, v...) }
-	Info         func(v ...interface{}) = func(v ...interface{}) { PrintFunc(LevelInfo, v...) }
-	Warn         func(v ...interface{}) = func(v ...interface{}) { PrintFunc(LevelWarning, v...) }
-	Error        func(v ...interface{}) = func(v ...interface{}) { PrintFunc(LevelError, v...) }
-	Critical     func(v ...interface{}) = func(v ...interface{}) { PrintFunc(LevelCritical, v...) }
+	levelName     = []string{"[TRACE]", "[DEBUG]", "[INFO]", "[WARN]", "[ERROR]", "[CRITICAL]"}
+	level         = LevelTrace //日志等级，传参设定
+	SimLogger     *log.Logger
+	logSplitFunc  func()                 = func() {}
+	Trace         func(v ...interface{}) = func(v ...interface{}) { PrintFunc(LevelTrace, v...) }
+	Debug         func(v ...interface{}) = func(v ...interface{}) { PrintFunc(LevelDebug, v...) }
+	Info          func(v ...interface{}) = func(v ...interface{}) { PrintFunc(LevelInfo, v...) }
+	Warn          func(v ...interface{}) = func(v ...interface{}) { PrintFunc(LevelWarning, v...) }
+	Error         func(v ...interface{}) = func(v ...interface{}) { PrintFunc(LevelError, v...) }
+	Critical      func(v ...interface{}) = func(v ...interface{}) { PrintFunc(LevelCritical, v...) }
 )
 
 func (this Level) String() string {
@@ -56,7 +56,9 @@ func SetLogLevel(l Level) {
 func logData(v ...interface{}) string {
 	str := fmt.Sprint(v...)
 	size := len(str)
-	if size > MAX_DATA_SIZE {size = MAX_DATA_SIZE}
+	if size > MAX_DATA_SIZE {
+		size = MAX_DATA_SIZE
+	}
 	return str[:size]
 }
 

@@ -87,7 +87,7 @@ func logInit(path string, maxday int, loglevel Level) {
 		os.Exit(-1)
 	}
 
-	logfilename = GetLogName(logbasepath)
+	logfilename = GetLogName(logfilepath)
 
 	logfile, err = OpenAndCreateFile(logfilename, os.O_APPEND)
 	if nil != err {
@@ -150,17 +150,17 @@ func changelogdate() {
 				logfilepath = logbasepath + MakeLogPath(now) + "/"
 				logfileindex = 0
 				logfileindex++
-
-//				err := MakeDirAll(logfilepath)
-//				if nil != err {
-//					fmt.Printf("[simlog]ChangeLogPathOrFile|MakeDirAll %s|%s \n", logfilepath, err.Error())
-//					//os.Exit(-1)
-//					return
-//				}
+				logfilename = logfilepath + "all.log"
+				//				err := MakeDirAll(logfilepath)
+				//				if nil != err {
+				//					fmt.Printf("[simlog]ChangeLogPathOrFile|MakeDirAll %s|%s \n", logfilepath, err.Error())
+				//					//os.Exit(-1)
+				//					return
+				//				}
 				changelogfile()
 				//删除配置指定时间的日志文件
 				removelogdir(MAXLOGDAY, now)
-				
+
 			}()
 		}
 	}
@@ -171,35 +171,35 @@ func changelogfile() {
 
 	//创建新文件
 	//logfilename = logfilepath + "all.log"
-	if splitFlag {
-		for i :=0; i<1; i++ {
-			//关闭上一个文件
-			logfile.Close()
-			now := time.Now()
-			logdate = now
-			logfilepath = logbasepath + MakeLogPath(now) + "/"
-	
-			if err := MakeDirAll(logfilepath); err != nil {
-				fmt.Printf("[simlog]ChangeLogPathOrFile|MakeDirAll %s|%s \n", logfilepath, err.Error())
-				//os.Exit(-1)
-				break
-			}
-			old := logfilepath + fmt.Sprintf("all.log.%04d%02d%02d-%02d%02d%02d.%d",
-				now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second(), logfileindex)
-			if err := os.Rename(logfilename, old); err != nil {
-				fmt.Printf("Rename %s -> %s failed err=%s", logfilename, old, err.Error())
-				break
-			}
+	//	if splitFlag {
+	for i := 0; i < 1; i++ {
+		//关闭上一个文件
+		logfile.Close()
+		now := time.Now()
+		logdate = now
+		logfilepath = logbasepath + MakeLogPath(now) + "/"
+
+		if err := MakeDirAll(logfilepath); err != nil {
+			fmt.Printf("[simlog]ChangeLogPathOrFile|MakeDirAll %s|%s \n", logfilepath, err.Error())
+			//os.Exit(-1)
+			break
 		}
-		var err error
-		logfile, err = OpenAndCreateFile(logfilename, os.O_TRUNC)
-		if nil != err {
-			fmt.Printf("ChangeLogPathOrFile|open log file %s|%s\n", logfilename, err.Error())
-			return
+		old := logfilepath + fmt.Sprintf("all.log.%04d%02d%02d-%02d%02d%02d.%d",
+			now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second(), logfileindex)
+		if err := os.Rename(logfilename, old); err != nil {
+			fmt.Printf("Rename %s -> %s failed err=%s", logfilename, old, err.Error())
+			break
 		}
-		SimLogger = log.New(logfile, "\n", log.Ldate|log.Ltime|log.Llongfile)
-	} else {
-		//		newFile = logfilepath + "all.log"
 	}
+	var err error
+	logfile, err = OpenAndCreateFile(logfilename, os.O_TRUNC)
+	if nil != err {
+		fmt.Printf("ChangeLogPathOrFile|open log file %s|%s\n", logfilename, err.Error())
+		return
+	}
+	SimLogger = log.New(logfile, "\n", log.Ldate|log.Ltime|log.Llongfile)
+	//} else {
+	//		newFile = logfilepath + "all.log"
+	//}
 
 }
