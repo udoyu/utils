@@ -24,6 +24,7 @@ const (
 )
 
 var (
+	MAX_DATA_SIZE = 4096
 	levelName    = []string{"[TRACE]", "[DEBUG]", "[INFO]", "[WARN]", "[ERROR]", "[CRITICAL]"}
 	level        = LevelTrace //日志等级，传参设定
 	SimLogger    *log.Logger
@@ -50,6 +51,13 @@ func LogLevel() Level {
 // logger.
 func SetLogLevel(l Level) {
 	level = l
+}
+
+func logData(v ...interface{}) string {
+	str := fmt.Sprint(v...)
+	size := len(str)
+	if size > MAX_DATA_SIZE {size = MAX_DATA_SIZE}
+	return str[:size]
 }
 
 // logger references the used application logger.
@@ -81,49 +89,49 @@ func Close() {
 
 func PrintFunc(loglevel Level, v ...interface{}) {
 	if level <= loglevel {
-		log.Println(loglevel.String() + fmt.Sprint(v...))
+		log.Println(loglevel.String() + logData(v...))
 	}
 }
 
 func TraceFunc(v ...interface{}) {
 	if level <= LevelTrace {
 		logSplitFunc()
-		SimLogger.Output(2, LevelTrace.String()+fmt.Sprint(v...))
+		SimLogger.Output(2, LevelTrace.String()+logData(v...))
 	}
 }
 
 func DebugFunc(v ...interface{}) {
 	if level <= LevelDebug {
 		logSplitFunc()
-		SimLogger.Output(2, LevelDebug.String()+fmt.Sprint(v...))
+		SimLogger.Output(2, LevelDebug.String()+logData(v...))
 	}
 }
 
 func InfoFunc(v ...interface{}) {
 	if level <= LevelInfo {
 		logSplitFunc()
-		SimLogger.Output(2, LevelInfo.String()+fmt.Sprint(v...))
+		SimLogger.Output(2, LevelInfo.String()+logData(v...))
 	}
 }
 
 func WarnFunc(v ...interface{}) {
 	if level <= LevelWarning {
 		logSplitFunc()
-		SimLogger.Output(2, LevelWarning.String()+fmt.Sprint(v...))
+		SimLogger.Output(2, LevelWarning.String()+logData(v...))
 	}
 }
 
 func ErrorFunc(v ...interface{}) {
 	if level <= LevelError {
 		logSplitFunc()
-		SimLogger.Output(2, LevelError.String()+fmt.Sprint(v...))
+		SimLogger.Output(2, LevelError.String()+logData(v...))
 	}
 }
 
 func CriticalFunc(v ...interface{}) {
 	if level <= LevelCritical {
 		logSplitFunc()
-		SimLogger.Output(2, LevelCritical.String()+fmt.Sprint(v...))
+		SimLogger.Output(2, LevelCritical.String()+logData(v...))
 	}
 }
 
