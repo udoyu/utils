@@ -40,31 +40,31 @@ func getdate(t time.Time) int {
 }
 
 func GetLogName(path string) string {
-	fis, err := ReadDir(path)
-	if nil != err {
-		fmt.Printf("[nettao]GetLogName|ReadDir %s|%s failed", path, err.Error())
-		os.Exit(-1)
-	}
-	filename := ""
-	if splitFlag {
-		logfileindex = 0
+	//	fis, err := ReadDir(path)
+	//	if nil != err {
+	//		fmt.Printf("GetLogName|ReadDir %s|%s failed", path, err.Error())
+	//		os.Exit(-1)
+	//	}
+	//	filename := ""
+	//	if splitFlag {
+	//		logfileindex = 0
 
-		for _, fi := range fis {
-			if fi.IsDir() {
-				continue
-			}
-			logfileindex++
-		}
+	//		for _, fi := range fis {
+	//			if fi.IsDir() {
+	//				continue
+	//			}
+	//			logfileindex++
+	//		}
 
-		if logfileindex >= MAXLOGINDEX {
-			logfileindex = 0
-		}
-		logfileindex++
-		filename = path + fmt.Sprintf("%d.log", logfileindex)
-	} else {
-		filename = path + "all.log"
-	}
-	return filename
+	//		if logfileindex >= MAXLOGINDEX {
+	//			logfileindex = 0
+	//		}
+	//		logfileindex++
+	//		filename = path + fmt.Sprintf("%d.log", logfileindex)
+	//	} else {
+	//		filename = path + "all.log"
+	//	}
+	return path + "all.log"
 }
 
 func logInit(path string, maxday int, loglevel Level) {
@@ -83,15 +83,15 @@ func logInit(path string, maxday int, loglevel Level) {
 	logfilepath = logbasepath + MakeLogPath(now) + "/"
 	err := MakeDirAll(logfilepath)
 	if nil != err {
-		fmt.Printf("[nettao]LogInit|MakeDirAll logpath %s|%s failed\n", logfilepath, err.Error())
+		fmt.Printf("[simlog]LogInit|MakeDirAll logpath %s|%s failed\n", logfilepath, err.Error())
 		os.Exit(-1)
 	}
 
-	logfilename = GetLogName(logfilepath)
+	logfilename = GetLogName(logbasepath)
 
 	logfile, err = OpenAndCreateFile(logfilename, os.O_APPEND)
 	if nil != err {
-		fmt.Printf("[nettao]Start|open log file %s|%s\n", logfilename, err.Error())
+		fmt.Printf("log Start|open log file %s|%s\n", logfilename, err.Error())
 		os.Exit(-1)
 	}
 	SimLogger = log.New(logfile, "\n", log.Ldate|log.Ltime|log.Llongfile)
@@ -148,16 +148,19 @@ func changelogdate() {
 				//将全局信息重置
 				logdate = now
 				logfilepath = logbasepath + MakeLogPath(now) + "/"
-				logfileindex = 0
-				logfileindex++
-				err := MakeDirAll(logfilepath)
-				if nil != err {
-					fmt.Printf("[nettao]ChangeLogPathOrFile|MakeDirAll %s|%s \n", logfilepath, err.Error())
-					os.Exit(-1)
-				}
+//				//logfileindex = 0
+//				//logfileindex++
+
+//				err := MakeDirAll(logfilepath)
+//				if nil != err {
+//					fmt.Printf("[simlog]ChangeLogPathOrFile|MakeDirAll %s|%s \n", logfilepath, err.Error())
+//					//os.Exit(-1)
+//					return
+//				}
+				changelogfile()
 				//删除配置指定时间的日志文件
 				removelogdir(MAXLOGDAY, now)
-				changelogfile()
+				
 			}()
 		}
 	}
@@ -165,19 +168,40 @@ func changelogdate() {
 }
 
 func changelogfile() {
-	//关闭上一个文件
-	logfile.Close()
+
 	//创建新文件
+	//logfilename = logfilepath + "all.log"
 	if splitFlag {
-		logfilename = logfilepath + fmt.Sprintf("%d.log", logfileindex)
+		for i :=0; i<1; i++ {
+			//关闭上一个文件
+			logfile.Close()
+			now := time.Now()
+			logdate = now
+			logfilepath = logbasepath + MakeLogPath(now) + "/"
+			//logfileindex = 0
+			//logfileindex++
+	
+			if err := MakeDirAll(logfilepath); err != nil {
+				fmt.Printf("[simlog]ChangeLogPathOrFile|MakeDirAll %s|%s \n", logfilepath, err.Error())
+				//os.Exit(-1)
+				break
+			}
+			old := logfilepath + fmt.Sprintf("all.log.%04d%02d%02d-%02d%02d%02d",
+				now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second())
+			if err := os.Rename(logfilename, old); err != nil {
+				fmt.Printf("Rename %s -> %s failed err=%s", logfilename, old, err.Error())
+				break
+			}
+		}
+		var err error
+		logfile, err = OpenAndCreateFile(logfilename, os.O_TRUNC)
+		if nil != err {
+			fmt.Printf("ChangeLogPathOrFile|open log file %s|%s\n", logfilename, err.Error())
+			return
+		}
+		SimLogger = log.New(logfile, "\n", log.Ldate|log.Ltime|log.Llongfile)
 	} else {
-		logfilename = logfilepath + "all.log"
+		//		newFile = logfilepath + "all.log"
 	}
-	var err error
-	logfile, err = OpenAndCreateFile(logfilename, os.O_TRUNC)
-	if nil != err {
-		fmt.Printf("[nettao]ChangeLogPathOrFile|open log file %s|%s\n", logfilename, err.Error())
-		os.Exit(-1)
-	}
-	SimLogger = log.New(logfile, "\n", log.Ldate|log.Ltime|log.Llongfile)
+
 }
