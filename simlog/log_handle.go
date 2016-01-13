@@ -144,6 +144,8 @@ func movelogdir() {
 	}
 	var name string
 	var path string
+	now := time.Now()
+	nowstr := fmt.Sprintf("%4d%2d%2d", now.Year(), now.Month(), now.Day())
 	basepos := len(LOG_BASE_NAME+".")
 	for _, fi := range fis {
 		if fi.IsDir() {
@@ -154,7 +156,7 @@ func movelogdir() {
 		}
 		name = fi.Name()
 		//all.log.20160113
-		if len(name) < basepos {
+		if len(name) < basepos || name[basepos:basepos+8] == nowstr {
 			continue
 		}
 		path = logbasepath + name[basepos:basepos+8] + "/"
@@ -181,7 +183,7 @@ func initlogfile() {
 		fmt.Printf("GetLogName|ReadDir %s|%s failed", logbasepath, err.Error())
 		os.Exit(-1)
 	}
-
+	nowdate := time.Now()
 	for _, fi := range fis {
 		if fi.IsDir() {
 			continue
@@ -189,13 +191,14 @@ func initlogfile() {
 		if fi.Name() != LOG_BASE_NAME {
 			continue
 		}
-		nowdate := time.Now()
+		
 		olddate := fi.ModTime()
 		if nowdate.Day() == olddate.Day() && nowdate.Month() == olddate.Month() && nowdate.Year() == olddate.Year() {
 			return
 		}
 		
 		changelogfile()
+		break
 	}
 }
 
