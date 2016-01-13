@@ -156,7 +156,10 @@ func movelogdir() {
 		}
 		name = fi.Name()
 		//all.log.20160113
-		if len(name) < basepos || name[basepos:basepos+8] == nowstr {
+		if len(name) < basepos || name[:len(LOG_BASE_NAME)] != LOG_BASE_NAME {
+			continue
+		}
+		if len(name) < basepos + 8 || name[basepos:basepos+8] == nowstr {
 			continue
 		}
 		path = logbasepath + name[basepos:basepos+8] + "/"
