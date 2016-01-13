@@ -17,6 +17,7 @@ const (
 )
 
 var (
+	LOG_BASE_NAME = "all.log"
 	initFlag     bool        //是否已经初始化
 	splitFlag    bool        //是否根据文件大小切割
 	logbasepath  string      //日志根目录，传参设定
@@ -62,9 +63,9 @@ func GetLogName(path string) string {
 	//		logfileindex++
 	//		filename = path + fmt.Sprintf("%d.log", logfileindex)
 	//	} else {
-	//		filename = path + "all.log"
+	//		filename = path + LOG_BASE_NAME
 	//	}
-	return path + "all.log"
+	return path + LOG_BASE_NAME
 }
 
 func logInit(path string, maxday int, loglevel Level) {
@@ -95,6 +96,8 @@ func logInit(path string, maxday int, loglevel Level) {
 		os.Exit(-1)
 	}
 	SimLogger = log.New(logfile, "\n", log.Ldate|log.Ltime|log.Llongfile)
+	initlogfile()
+	movelogdir()
 	removelogdir(MAXLOGDAY, now)
 	if !initFlag {
 		initFlag = true
@@ -132,6 +135,68 @@ func removelogdir(daynum int, now time.Time) {
 	os.RemoveAll(tmpdir)
 }
 
+func movelogdir() {
+	fis, err := ReadDir(logbasepath)
+	if nil != err {
+		fmt.Printf("GetLogName|ReadDir %s|%s failed", logbasepath, err.Error())
+		os.Exit(-1)
+	}
+	var name string
+	var path string
+	basepos := len(LOG_BASE_NAME+".")
+	for _, fi := range fis {
+		if fi.IsDir() {
+			continue
+		}
+		if fi.Name() == LOG_BASE_NAME {
+			continue
+		}
+		name = fi.Name()
+		//all.log.20160113
+		if len(name) < len("all.log.20160113") {
+			continue
+		}
+		path = logbasepath + name[basepos:basepos+8]
+		if err := MakeDirAll(path); err != nil {
+			Error("movelogdir failed ", err.Error())
+			continue
+		}
+		oldname := logbasepath + name
+		newname := path + name
+		if err := os.Rename(oldname, newname); err != nil {
+			fmt.Printf("Rename %s -> %s failed err=%s", oldname, newname, err.Error())
+			continue
+		}
+	}
+
+}
+
+func initlogfile() {
+	movelogdir()
+	//move all.log
+	fis, err := ReadDir(logbasepath)
+	if nil != err {
+		fmt.Printf("GetLogName|ReadDir %s|%s failed", logbasepath, err.Error())
+		os.Exit(-1)
+	}
+
+	for _, fi := range fis {
+		if fi.IsDir() {
+			continue
+		}
+		if fi.Name() != LOG_BASE_NAME {
+			continue
+		}
+		nowdate := time.Now()
+		olddate := fi.ModTime()
+		if nowdate.Day() == olddate.Day() && nowdate.Month() == olddate.Month() && nowdate.Year() == olddate.Year() {
+			return
+		}
+		
+		changelogfile()
+	}
+}
+
 func changelogdate() {
 	logTimer := time.NewTicker(TimerDur)
 	for {
@@ -147,20 +212,15 @@ func changelogdate() {
 				//如果日期改变
 				//将全局信息重置
 				logdate = now
-				logfilepath = logbasepath + MakeLogPath(now) + "/"
+				//logfilepath = logbasepath + MakeLogPath(now) + "/"
 				logfileindex = 0
 				logfileindex++
-				logfilename = logfilepath + "all.log"
-				//				err := MakeDirAll(logfilepath)
-				//				if nil != err {
-				//					fmt.Printf("[simlog]ChangeLogPathOrFile|MakeDirAll %s|%s \n", logfilepath, err.Error())
-				//					//os.Exit(-1)
-				//					return
-				//				}
+				//logfilename = logfilepath + LOG_BASE_NAME
+				
 				changelogfile()
 				//删除配置指定时间的日志文件
+				movelogdir()
 				removelogdir(MAXLOGDAY, now)
-
 			}()
 		}
 	}
@@ -170,20 +230,13 @@ func changelogdate() {
 func changelogfile() {
 
 	//创建新文件
-	//logfilename = logfilepath + "all.log"
+	//logfilename = logfilepath + LOG_BASE_NAME
 	//	if splitFlag {
 	for i := 0; i < 1; i++ {
 		//关闭上一个文件
 		logfile.Close()
 		now := time.Now()
-		logdate = now
-		logfilepath = logbasepath + MakeLogPath(now) + "/"
 
-		if err := MakeDirAll(logfilepath); err != nil {
-			fmt.Printf("[simlog]ChangeLogPathOrFile|MakeDirAll %s|%s \n", logfilepath, err.Error())
-			//os.Exit(-1)
-			break
-		}
 		old := logfilepath + fmt.Sprintf("all.log.%04d%02d%02d-%02d%02d%02d.%d",
 			now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second(), logfileindex)
 		if err := os.Rename(logfilename, old); err != nil {
@@ -198,8 +251,4 @@ func changelogfile() {
 		return
 	}
 	SimLogger = log.New(logfile, "\n", log.Ldate|log.Ltime|log.Llongfile)
-	//} else {
-	//		newFile = logfilepath + "all.log"
-	//}
-
 }
