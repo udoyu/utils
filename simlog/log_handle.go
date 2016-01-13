@@ -156,7 +156,8 @@ func movelogdir() {
 		if len(name) < basepos {
 			continue
 		}
-		path = logbasepath + name[basepos:basepos+8]
+		path = logbasepath + name[basepos:basepos+8] + "/"
+
 		if err := MakeDirAll(path); err != nil {
 			Error("movelogdir failed ", err.Error())
 			continue
