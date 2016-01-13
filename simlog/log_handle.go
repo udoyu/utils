@@ -96,11 +96,12 @@ func logInit(path string, maxday int, loglevel Level) {
 		os.Exit(-1)
 	}
 	SimLogger = log.New(logfile, "\n", log.Ldate|log.Ltime|log.Llongfile)
-	initlogfile()
-	movelogdir()
-	removelogdir(MAXLOGDAY, now)
+
 	if !initFlag {
 		initFlag = true
+		initlogfile()
+		movelogdir()
+		removelogdir(MAXLOGDAY, now)
 		go changelogdate()
 	}
 }
