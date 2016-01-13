@@ -153,7 +153,7 @@ func movelogdir() {
 		}
 		name = fi.Name()
 		//all.log.20160113
-		if len(name) < len("all.log.20160113") {
+		if len(name) < basepos {
 			continue
 		}
 		path = logbasepath + name[basepos:basepos+8]
