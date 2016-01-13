@@ -81,7 +81,7 @@ func logInit(path string, maxday int, loglevel Level) {
 	SetLogLevel(loglevel)
 	logdate = now
 	logbasepath = path + "/"
-	logfilepath = logbasepath + MakeLogPath(now) + "/"
+	logfilepath = logbasepath 
 	err := MakeDirAll(logfilepath)
 	if nil != err {
 		fmt.Printf("[simlog]LogInit|MakeDirAll logpath %s|%s failed\n", logfilepath, err.Error())
