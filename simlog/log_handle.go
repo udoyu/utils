@@ -145,7 +145,7 @@ func movelogdir() {
 	var name string
 	var path string
 	now := time.Now()
-	nowstr := fmt.Sprintf("%4d%2d%2d", now.Year(), now.Month(), now.Day())
+	nowstr := fmt.Sprintf("%04d%02d%02d", now.Year(), now.Month(), now.Day())
 	basepos := len(LOG_BASE_NAME+".")
 	for _, fi := range fis {
 		if fi.IsDir() {
