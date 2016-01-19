@@ -36,6 +36,7 @@ type Pool struct {
 	elemsSize   int32
 	status      int32 //1-closed
 	timerStatus int32
+	waitTime	int //time for wait
 }
 
 func NewPool(callback func() (redis.Conn, error), maxIdle, maxActive int32) *Pool {
@@ -47,6 +48,10 @@ func NewPool(callback func() (redis.Conn, error), maxIdle, maxActive int32) *Poo
 	}
 	go pool.timerEvent()
 	return pool
+}
+
+func (this *Pool) SetWaitTime(d int) {
+	this.waitTime = d
 }
 
 func (this *Pool) Update(maxIdle, maxActive int32) {
@@ -153,11 +158,15 @@ func (this *Pool) get() (*RedisConn, error) {
 			atomic.AddInt32(&this.curActive, 1)
 		} else {
 			fmt.Println("Error 0001 : too many active conn, maxActive=", this.maxActive)
-			select {
-			case conn = <-this.elems:
-				atomic.AddInt32(&this.elemsSize, -1)
-			case <-time.After(time.Second * 3):
-				err = fmt.Errorf("Error 0003 : RedisPool Get timeout")
+			if this.waitTime != 0 {
+				select {
+				case conn = <-this.elems:
+					atomic.AddInt32(&this.elemsSize, -1)
+				case <-time.After(time.Second * time.Duration(this.waitTime)):
+					err = fmt.Errorf("Error 0003 : RedisPool Get timeout")
+				}
+			} else {
+				conn = <-this.elems
 			}
 		}
 

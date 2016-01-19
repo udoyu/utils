@@ -166,7 +166,7 @@ func (this WeiPay) UnifiedOrder(wpOptions UnifiedOrderReq) (*UnifiedOrderRsp, er
 	hp := httplib.Post("https://api.mch.weixin.qq.com/pay/unifiedorder")
 	rsp := UnifiedOrderRsp{}
 	fmt.Println(string(xmlBuf))
-	if err := hp.Body(xmlBuf).ToXml(&rsp); err != nil {
+	if err := hp.Body(xmlBuf).ToXML(&rsp); err != nil {
 		return &rsp, err
 	}
 	fmt.Println(rsp)
