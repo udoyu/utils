@@ -16,7 +16,6 @@ func OpenAndCreateFile(filename string, flag int) (*os.File, error) {
 	return os.OpenFile(filename, os.O_RDWR|os.O_CREATE|flag, os.ModePerm)
 }
 
-
 func ReadDir(dir string) (fi []os.FileInfo, err error) {
 	file, err := os.Open(dir)
 	if nil != err {
@@ -46,12 +45,12 @@ func LogPathName(curtime time.Time, v ...interface{}) string {
 	index := -1
 	ok := false
 	if len(v) > 0 {
-		if index,ok = v[0].(int);ok {
+		if index, ok = v[0].(int); ok {
 			format += "_%02d"
 		}
 	}
 	if len(v) > 1 {
-		if prefix,ok = v[1].(string);ok {
+		if prefix, ok = v[1].(string); ok {
 		}
 	}
 	if -1 != index {

@@ -2,9 +2,9 @@ package simlog
 
 import (
 	"fmt"
-	"time"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestMakeDirAll(t *testing.T) {
@@ -34,7 +34,7 @@ func TestOpenAndCreateFile1(t *testing.T) {
 		t.Fatal(err)
 	}
 	file.Close()
-	
+
 	os.Remove(f)
 }
 
@@ -86,7 +86,7 @@ func TestReadDir1(t *testing.T) {
 	if len(files) != 1 {
 		t.Error("ReadDir failed|", len(files))
 	}
-	
+
 	os.RemoveAll(dir)
 }
 
@@ -96,10 +96,10 @@ func TestGetFileSize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	size, e := GetFileSize(file)
 	if e != nil || size != 0 {
-		t.Error("GetFileSize failed|size=", size, "|err=",e)
+		t.Error("GetFileSize failed|size=", size, "|err=", e)
 	}
 	n, e1 := file.WriteString("12345")
 	if e1 != nil {
@@ -118,7 +118,7 @@ func TestLogPathName(t *testing.T) {
 	format := "%04d%02d%02d"
 	rightName := fmt.Sprintf(format, now.Year(), now.Month(), now.Day())
 	pathName := LogPathName(now)
-	
+
 	if pathName != rightName {
 		t.Error("pathName=", pathName, " |rightName=", rightName)
 	}
@@ -133,4 +133,3 @@ func TestLogPathName1(t *testing.T) {
 		t.Error("pathName=", pathName, " |rightName=", rightName)
 	}
 }
-

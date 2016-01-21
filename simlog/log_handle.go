@@ -29,7 +29,7 @@ type LogHandler struct {
 	MaxDay      int   //保存文件最大天数，传参设定
 	MaxSize     int   //日志判断周期，即生成MAXLOGCNT条日志后开始判断当前文件是否超过设定大小
 	logger      *log.Logger
-	level       Level   //日志级别
+	level       Level      //日志级别
 	splitFlag   bool       //是否根据文件大小切割
 	logPath     string     //日志根目录，传参设定
 	logDate     time.Time  //当天的日期，用来判断日期是否改变
@@ -43,19 +43,21 @@ type LogHandler struct {
 
 func (this *LogHandler) OutPut(level Level, v ...interface{}) {
 	if this.level < level {
+		str := fmt.Sprint(v...)
+		fmt.Println(str)
+		size := len(str)
+		if size > this.MaxDataSize {
+			size = this.MaxDataSize
+		}
 		if this.logger != nil {
-			str := fmt.Sprint(v...)
-			size := len(str)
-			if size > this.MaxDataSize {
-				size = this.MaxDataSize
-			}
+
 			this.lock.Lock()
 			this.logger.Output(4, level.String()+str[:size])
 			this.size += size
 			this.logSplit()
 			this.lock.Unlock()
 		} else {
-			log.Println(level.String() + fmt.Sprint(v...))
+			log.Println(level.String() + str[:size])
 		}
 	}
 }
@@ -122,7 +124,7 @@ func (this *LogHandler) Init(path string, maxday int, loglevel Level) {
 	if path == this.logPath && maxday == this.MaxDay && loglevel == this.level {
 		return
 	}
-
+	this.MaxDataSize = 4096
 	now := time.Now()
 	this.lock.Lock()
 	defer this.lock.Unlock()
