@@ -11,6 +11,12 @@ func MakeDirAll(dir string) error {
 	return os.MkdirAll(dir, os.ModePerm)
 }
 
+//flag设置追加os.O_Append或清零os.O_TRUNC
+func OpenAndCreateFile(filename string, flag int) (*os.File, error) {
+	return os.OpenFile(filename, os.O_RDWR|os.O_CREATE|flag, os.ModePerm)
+}
+
+
 func ReadDir(dir string) (fi []os.FileInfo, err error) {
 	file, err := os.Open(dir)
 	if nil != err {
@@ -33,22 +39,20 @@ func ClearFile(filename string) error {
 	return ioutil.WriteFile(filename, []byte(""), os.ModePerm)
 }
 
-//flag设置追加os.O_Append或清零os.O_TRUNC
-func OpenAndCreateFile(filename string, flag int) (*os.File, error) {
-	return os.OpenFile(filename, os.O_RDWR|os.O_CREATE|flag, os.ModePerm)
-}
-
 //时间， 索引号， 前缀
-func MakeLogPath(curtime time.Time, v ...interface{}) string {
+func LogPathName(curtime time.Time, v ...interface{}) string {
 	format := "%s%04d%02d%02d"
 	prefix := ""
 	index := -1
+	ok := false
 	if len(v) > 0 {
-		index = v[0].(int)
-		format += "_%02d"
+		if index,ok = v[0].(int);ok {
+			format += "_%02d"
+		}
 	}
 	if len(v) > 1 {
-		prefix = v[1].(string)
+		if prefix,ok = v[1].(string);ok {
+		}
 	}
 	if -1 != index {
 		return fmt.Sprintf(format, prefix, curtime.Year(), curtime.Month(), curtime.Day(), index)

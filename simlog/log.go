@@ -2,17 +2,39 @@ package simlog
 
 // from beego
 
-import (
-	"fmt"
-	"log"
-)
+import ()
 
 //--------------------
 // LOG LEVEL
 //--------------------
 
 // Log levels to control the logging output.
+
+type LogInterface interface {
+	Trace(v ...interface{})
+	Debug(v ...interface{})
+	Info(v ...interface{})
+	Warn(v ...interface{})
+	Error(v ...interface{})
+	Critical(v ...interface{})
+	SetLevel(Level)
+	GetLevel() Level
+	Close()
+}
+
+var logLevelNames = []string{
+	"[TRACE]", "[DEBUG]", "[INFO]", "[WARN]", "[ERROR]", "[CRITICAL]",
+}
+
+func SetLevelName(names []string) {
+	levelName = names
+}
+
 type Level int
+
+func (this Level) String() string {
+	return levelName[this]
+}
 
 const (
 	LevelTrace Level = iota
@@ -24,176 +46,63 @@ const (
 )
 
 var (
-	MAX_DATA_SIZE = 4096
-	levelName     = []string{"[TRACE]", "[DEBUG]", "[INFO]", "[WARN]", "[ERROR]", "[CRITICAL]"}
-	level         = LevelTrace //日志等级，传参设定
-	SimLogger     *log.Logger
-	logSplitFunc  func()                 = func() {}
-	Trace         func(v ...interface{}) = func(v ...interface{}) { PrintFunc(LevelTrace, v...) }
-	Debug         func(v ...interface{}) = func(v ...interface{}) { PrintFunc(LevelDebug, v...) }
-	Info          func(v ...interface{}) = func(v ...interface{}) { PrintFunc(LevelInfo, v...) }
-	Warn          func(v ...interface{}) = func(v ...interface{}) { PrintFunc(LevelWarning, v...) }
-	Error         func(v ...interface{}) = func(v ...interface{}) { PrintFunc(LevelError, v...) }
-	Critical      func(v ...interface{}) = func(v ...interface{}) { PrintFunc(LevelCritical, v...) }
+	Logger LogInterface = &LogHandler{
+		level: LevelTrace,
+	}
 )
 
-func (this Level) String() string {
-	return levelName[this]
+func Trace(v ...interface{}) {
+	Logger.Trace(v...)
+}
+
+func Debug(v ...interface{}) {
+	Logger.Debug(v...)
+}
+
+func Info(v ...interface{}) {
+	Logger.Info(v...)
+}
+
+func Warn(v ...interface{}) {
+	Logger.Warn(v...)
+}
+
+func Error(v ...interface{}) {
+	Logger.Error(v...)
+}
+
+func Critical(v ...interface{}) {
+	Logger.Critical(v...)
 }
 
 // LogLevel returns the global log level and can be used in
 // own implementations of the logger interface.
-func LogLevel() Level {
-	return level
+func GetLevel() Level {
+	return Logger.GetLevel()
 }
 
 // SetLogLevel sets the global log level used by the simple
 // logger.
-func SetLogLevel(l Level) {
-	level = l
-}
-
-func logData(v ...interface{}) string {
-	str := fmt.Sprint(v...)
-	size := len(str)
-	if size > MAX_DATA_SIZE {
-		size = MAX_DATA_SIZE
-	}
-	return str[:size]
-}
-
-// logger references the used application logger.
-//var NettaoLogger = log.New(os.Stdout, "", log.Ldate|log.Ltime)
-
-// SetLogger sets a new logger.
-func SetLogger(l *log.Logger) {
-	SimLogger = l
+func SetLevel(l Level) {
+	Logger.SetLevel(l)
 }
 
 func SetSplit(maxsize, maxindex int) {
-	setLogSplit(maxsize, maxindex)
-	logSplitFunc = logSplit
+	if logger, ok := Logger.(*LogHandler); ok {
+		logger.SetLogSplit(maxsize, maxindex)
+	}
 }
 
 func Init(path string, maxday int, loglevel Level) {
-	logInit(path, maxday, loglevel)
-	Trace = TraceFunc
-	Debug = DebugFunc
-	Info = InfoFunc
-	Warn = WarnFunc
-	Error = ErrorFunc
-	Critical = CriticalFunc
+	if logger, ok := Logger.(*LogHandler); ok {
+		logger.Init(path, maxday, loglevel)
+	}
 }
 
 func Close() {
-	logClose()
+	Logger.Close()
 }
 
-func PrintFunc(loglevel Level, v ...interface{}) {
-	if level <= loglevel {
-		log.Println(loglevel.String() + logData(v...))
-	}
-}
-
-func TraceFunc(v ...interface{}) {
-	if level <= LevelTrace {
-		logSplitFunc()
-		SimLogger.Output(2, LevelTrace.String()+logData(v...))
-	}
-}
-
-func DebugFunc(v ...interface{}) {
-	if level <= LevelDebug {
-		logSplitFunc()
-		SimLogger.Output(2, LevelDebug.String()+logData(v...))
-	}
-}
-
-func InfoFunc(v ...interface{}) {
-	if level <= LevelInfo {
-		logSplitFunc()
-		SimLogger.Output(2, LevelInfo.String()+logData(v...))
-	}
-}
-
-func WarnFunc(v ...interface{}) {
-	if level <= LevelWarning {
-		logSplitFunc()
-		SimLogger.Output(2, LevelWarning.String()+logData(v...))
-	}
-}
-
-func ErrorFunc(v ...interface{}) {
-	if level <= LevelError {
-		logSplitFunc()
-		SimLogger.Output(2, LevelError.String()+logData(v...))
-	}
-}
-
-func CriticalFunc(v ...interface{}) {
-	if level <= LevelCritical {
-		logSplitFunc()
-		SimLogger.Output(2, LevelCritical.String()+logData(v...))
-	}
-}
-
-// Trace logs a message at trace level.
-func LogTrace(format string) {
-	if level <= LevelTrace {
-		SimLogger.Printf(LevelTrace.String() + format)
-	}
-}
-
-// Debug logs a message at debug level.
-func LogDebug(format string, skips ...int) {
-	if level <= LevelDebug {
-		logPrintf(LevelDebug.String()+format, skips...)
-	}
-}
-
-// Info logs a message at info level.
-func LogInfo(format string, skips ...int) {
-	if level <= LevelInfo {
-		logPrintf(LevelInfo.String()+format, skips...)
-	}
-}
-
-// Warning logs a message at warning level.
-func LogWarn(format string, skips ...int) {
-	if level <= LevelWarning {
-		logPrintf(LevelWarning.String()+format, skips...)
-	}
-}
-
-// Error logs a message at error level.
-func LogError(format string, skips ...int) {
-	if level <= LevelError {
-		logPrintf(LevelError.String()+format, skips...)
-	}
-}
-
-// Critical logs a message at critical level.
-func LogCritical(format string, skips ...int) {
-	if level <= LevelCritical {
-		logPrintf(LevelCritical.String()+format, skips...)
-	}
-}
-
-func logPrintf(format string, v ...int) {
-	logSplitFunc()
-	skip := 3
-	if len(v) > 0 {
-		skip = v[0]
-	}
-	SimLogger.Output(skip, format)
-}
-
-func logSplit() {
-	logfilelock.Lock()
-	defer logfilelock.Unlock()
-	logcnt++
-	if logcnt > MAXLOGCNT {
-		changelogindex(1)
-		logcnt = 0
-	}
-}
+var (
+	levelName = []string{"[TRACE]", "[DEBUG]", "[INFO]", "[WARN]", "[ERROR]", "[CRITICAL]"}
+)
