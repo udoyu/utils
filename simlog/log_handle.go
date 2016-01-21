@@ -44,7 +44,6 @@ type LogHandler struct {
 func (this *LogHandler) OutPut(level Level, v ...interface{}) {
 	if this.level < level {
 		str := fmt.Sprint(v...)
-		fmt.Println(str)
 		size := len(str)
 		if size > this.MaxDataSize {
 			size = this.MaxDataSize
