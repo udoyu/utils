@@ -36,7 +36,8 @@ type Pool struct {
 	elemsSize   int32
 	status      int32 //1-closed
 	timerStatus int32
-	waitTime	int //time for wait
+	waitTime    int //time for wait
+	lifeTime	int32 //time for life,if timeout,will be close the redundant conn
 }
 
 func NewPool(callback func() (redis.Conn, error), maxIdle, maxActive int32) *Pool {
@@ -45,6 +46,8 @@ func NewPool(callback func() (redis.Conn, error), maxIdle, maxActive int32) *Poo
 		elems:     make(chan *RedisConn, maxActive),
 		maxIdle:   maxIdle,
 		maxActive: maxActive,
+		waitTime : 0,
+		lifeTime : 10,
 	}
 	go pool.timerEvent()
 	return pool
@@ -52,6 +55,10 @@ func NewPool(callback func() (redis.Conn, error), maxIdle, maxActive int32) *Poo
 
 func (this *Pool) SetWaitTime(d int) {
 	this.waitTime = d
+}
+
+func (this *Pool) SetLifeTime(d int) {
+	atomic.StoreInt32(&this.lifeTime, int32(d))
 }
 
 func (this *Pool) Update(maxIdle, maxActive int32) {
@@ -198,7 +205,7 @@ func (this *Pool) timerEvent() {
 		case <-timer.C:
 			if atomic.LoadInt32(&this.elemsSize) > this.maxIdle {
 				this.timerStatus++
-				if this.timerStatus > 10 {
+				if this.timerStatus > atomic.LoadInt32(&this.lifeTime) {
 					select {
 					case e := <-this.elems:
 						atomic.AddInt32(&this.curActive, -1)
