@@ -68,12 +68,9 @@ func (this *Parser) LoadFile(filename string) error {
 		if io.EOF == err {
 			flag = false
 		}
+		line = strings.TrimSpace(line)
 
-		line = strings.TrimLeft(line, " ")
-		line = strings.TrimLeft(line, "\t")
-		line = strings.TrimRight(line, " ")
-		line = strings.TrimRight(line, "\t")
-		if len(line) < 2 || '#' == line[0] || '\n' == line[0] || '\r' == line[0] {
+		if len(line) < 2 || '#' == line[0] {
 			continue
 		}
 
