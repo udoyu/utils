@@ -140,16 +140,17 @@ func (this *LogHandler) Init(path string, maxday int, loglevel Level) {
 	if this.BaseName == "" {
 		this.BaseName = "all.log"
 	}
-	this.fileName = this.filePath + this.BaseName
-
-	this.file, err = OpenAndCreateFile(this.fileName, os.O_APPEND)
-	if nil != err {
-		fmt.Printf("log Start|open log file %s|%s\n", this.fileName, err.Error())
-		os.Exit(-1)
-	}
-	this.logger = log.New(this.file, "\n", log.Ldate|log.Ltime|log.Llongfile)
-
+	
+	
 	if this.logger == nil {
+		this.fileName = this.filePath + this.BaseName
+
+		this.file, err = OpenAndCreateFile(this.fileName, os.O_APPEND)
+		if nil != err {
+			fmt.Printf("log Start|open log file %s|%s\n", this.fileName, err.Error())
+			os.Exit(-1)
+		}
+		this.logger = log.New(this.file, "\n", log.Ldate|log.Ltime|log.Llongfile)
 		this.initlogfile()
 		this.movelogdir()
 		this.removelogdir(this.MaxDay, now)
