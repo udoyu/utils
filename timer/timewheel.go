@@ -38,19 +38,28 @@ func NewTimeWheel(precision time.Duration, interval int) *TimeWheel {
 				nextIndex := atomic.AddInt32(&tw.curIndex, 1) % tw.interval
 				atomic.StoreInt32(&tw.curIndex, nextIndex)
 				ml := &tw.tasks[curIndex]
+
 				var elems list.List
 				ml.Lock()
 				elems = ml.Elems
 				ml.Elems.Init()
 				ml.Unlock()
-				e := elems.Front()
-				if e != nil {
-					go func(e *list.Element) {
+				if elems.Len() > 1000 {
+					go func(elems list.List) {
+						e := elems.Front()
+						if e != nil {
+							for ; e != nil; e = e.Next() {
+								e.Value.(func())()
+							}
+						}
+					}(elems)
+				} else {
+					e := elems.Front()
+					if e != nil {
 						for ; e != nil; e = e.Next() {
 							e.Value.(func())()
 						}
-					}(e)
-
+					}
 				}
 			}
 		}

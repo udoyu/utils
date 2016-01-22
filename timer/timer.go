@@ -64,3 +64,11 @@ func (this *TimerHandler) Add(d time.Duration, task func()) {
 		tw.Add(task)
 	}
 }
+
+func (this *TimerHandler) Stop() {
+	this.RLock()
+	for _, v := range this.timermap {
+		v.Stop()
+	}
+	defer this.RUnlock()
+}
