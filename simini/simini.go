@@ -1,6 +1,7 @@
 package simini
 
 import (
+	"fmt"
 	"bufio"
 	"io"
 	"os"
@@ -34,41 +35,38 @@ func (p *SimIni) LoadFile(filename string) int {
 	buf := bufio.NewReader(fd)
 	curkey := ""
 	flag := true
+	num := 0
 	for flag {
+		num++
 		line, err := buf.ReadString('\n')
 		if io.EOF == err {
 			flag = false
 		}
 
-		line = strings.TrimLeft(line, " ")
-		if len(line) < 2 || '#' == line[0] || '\n' == line[0] || '\r' == line[0] {
+		line = strings.TrimSpace(line)
+		if len(line) < 2 || '#' == line[0] {
 			continue
 		}
 
 		length := len(line)
-		if line[length-2] == '\r' {
-			length -= 1
-			line = line[:length]
-		}
-		if '[' == line[0] && ']' == line[length-2] {
-			curkey = line[1 : length-2]
+
+		if '[' == line[0] && ']' == line[length-1] {
+			curkey = line[1 : length-1]
 			p.sess_map_[curkey] = make(StrMap)
 			continue
 		}
 		if curkey == "" {
-			p.errmsg_ = "lack of []"
+			p.errmsg_ = fmt.Sprintf("lack of [] on line %d", num)
 			return 1
 		}
 		val := strings.SplitN(line, "=", 2)
 		if 2 != len(val) || 0 == len(val[0]) {
 			continue
 		}
-		v := strings.TrimLeft(val[1], " ")
-		v_len := len(v) - 1
-		if !flag {
-			v_len += 1
-		}
-		p.sess_map_[curkey][strings.TrimRight(val[0], " ")] = v[0:v_len]
+		val[0] = strings.TrimSpace(val[0])
+		val[1] = strings.TrimSpace(val[1])
+		fmt.Println(val[0], val[1])
+		p.sess_map_[curkey][val[0]] = val[1]
 	}
 	p.loaded_ = true
 	return 0
