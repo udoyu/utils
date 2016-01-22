@@ -48,6 +48,7 @@ const (
 var (
 	Logger LogInterface = &LogHandler{
 		level: LevelTrace,
+		MaxDataSize : 4096,
 	}
 )
 
