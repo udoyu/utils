@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func Test_XTimerHandler(t *testing.T) {
+func Test_XTimerHandlerAfterFunc(t *testing.T) {
 	timer := NewXTimerHandler(256)
 	defer timer.Stop()
 	{
@@ -33,10 +33,19 @@ func Test_XTimerHandler(t *testing.T) {
 	}
 }
 
-func Benchmark_XTimerHandler(b *testing.B) {
+func Benchmark_XTimerHandlerAfterFunc(b *testing.B) {
 	timer := NewXTimerHandler(256)
 	defer timer.Stop()
 	for i := 0; i < b.N; i++ {
 		timer.AfterFunc(time.Second, func() {})
+	}
+}
+
+func Benchmark_XTimerHandlerAfter(b *testing.B) {
+	timer := NewXTimerHandler(256)
+	defer timer.Stop()
+	defer timer.Stop()
+	for i:=0; i<b.N; i++ {
+		timer.After(time.Second)
 	}
 }

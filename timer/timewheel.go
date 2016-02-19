@@ -17,8 +17,8 @@ type MutextTicker struct {
 	sync.RWMutex
 }
 
-func NewMutexTicker() MutextTicker {
-	return MutextTicker{
+func NewMutexTicker() *MutextTicker {
+	return &MutextTicker{
 		c: make(chan struct{}),
 	}
 }
@@ -44,7 +44,7 @@ type TimeWheel struct {
 	interval int32
 	curIndex int32
 	status   int32
-	timerC   []MutextTicker
+	timerC   []*MutextTicker
 }
 
 func NewTimeWheel(precision time.Duration, interval int) *TimeWheel {
@@ -56,7 +56,7 @@ func NewTimeWheel(precision time.Duration, interval int) *TimeWheel {
 	}
 	tw.interval = int32(interval)
 	tw.curIndex = int32(0)
-	tw.timerC = make([]MutextTicker, interval)
+	tw.timerC = make([]*MutextTicker, interval)
 	for i := 0; i < interval; i++ {
 		tw.timerC[i] = NewMutexTicker()
 	}

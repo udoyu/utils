@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func Test_XTimeWheel(t *testing.T) {
+func Test_XTimeWheelAfterFunc(t *testing.T) {
 	tw := NewXTimeWheel(time.Second, 2, 256)
 	defer tw.Stop()
 	i := int32(0)
@@ -20,7 +20,7 @@ func Test_XTimeWheel(t *testing.T) {
 	}
 }
 
-func Test_XTimeWheel1(t *testing.T) {
+func Test_XTimeWheelAfterFunc1(t *testing.T) {
 	tw := NewXTimeWheel(time.Second, 2, 256)
 	defer tw.Stop()
 	i := int32(0)
