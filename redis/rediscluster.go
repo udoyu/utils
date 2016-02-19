@@ -64,6 +64,18 @@ func (self *RedisCluster) Update(max_idle, max_active int32) {
 	}
 }
 
+func (self *RedisCluster) SetWaitTime(t int) {
+	for _, rh := range self.Handles {
+		rh.Pool.SetWaitTime(t)
+	}
+}
+
+func (self *RedisCluster) SetLifeTime(t int) {
+	for _, rh := range self.Handles {
+		rh.Pool.SetLifeTime(t)
+	}
+}
+
 func (self *RedisCluster) hasClusterEnabled(node *RedisHandle) bool {
 	_, err := node.Do("CLUSTER", "INFO")
 	if err != nil {

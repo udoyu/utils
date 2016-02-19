@@ -15,3 +15,7 @@ func New(v reflect.Value) interface{} {
 	}
 	return r.Elem().Interface()
 }
+
+func NewFromType(rt reflect.Type) interface{} {
+	return reflect.New(rt.Elem()).Interface()
+}

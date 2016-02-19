@@ -36,8 +36,8 @@ type Pool struct {
 	elemsSize   int32
 	status      int32 //1-closed
 	timerStatus int32
-	waitTime    int //time for wait
-	lifeTime	int32 //time for life,if timeout,will be close the redundant conn
+	waitTime    int   //time for wait
+	lifeTime    int32 //time for life,if timeout,will be close the redundant conn
 }
 
 func NewPool(callback func() (redis.Conn, error), maxIdle, maxActive int32) *Pool {
@@ -46,8 +46,8 @@ func NewPool(callback func() (redis.Conn, error), maxIdle, maxActive int32) *Poo
 		elems:     make(chan *RedisConn, maxActive),
 		maxIdle:   maxIdle,
 		maxActive: maxActive,
-		waitTime : 0,
-		lifeTime : 10,
+		waitTime:  0,
+		lifeTime:  10,
 	}
 	go pool.timerEvent()
 	return pool
