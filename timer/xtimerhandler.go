@@ -1,81 +1,39 @@
 package timer
 
 import (
-	"sync"
+	"sync/atomic"
 	"time"
 )
 
 type XTimerHandler struct {
-	sync.RWMutex
-	timermap map[time.Duration]*XTimeWheel
-	buckets  int
+	handers []*TimerHandler
+	buckets int32
+	index   int32
 }
 
 func NewXTimerHandler(buckets int) *XTimerHandler {
-	return &XTimerHandler{
-		timermap: make(map[time.Duration]*XTimeWheel),
-		buckets : buckets,
+	xtw := &XTimerHandler{
+		handers: make([]*TimerHandler, buckets),
+		buckets: int32(buckets),
 	}
-}
-
-func (this *XTimerHandler) get(d time.Duration) *XTimeWheel {
-	var tw *XTimeWheel
-	this.RLock()
-	tw, _ = this.timermap[d]
-	this.RUnlock()
-	return tw
-}
-
-func (this *XTimerHandler) add(d time.Duration) *XTimeWheel {
-	p := time.Second
-	i := int64(0)
-	if d >= time.Microsecond {
-		p = d / 10
-		i = 10
-	} else {
-		p = time.Nanosecond
+	for i := 0; i < buckets; i++ {
+		xtw.handers[i] = NewTimerHandler()
 	}
-
-	if i == 0 {
-		return nil
-	}
-	tw := NewXTimeWheel(p, int(i), this.buckets)
-	this.Lock()
-	this.timermap[d] = tw
-	this.Unlock()
-	return tw
+	return xtw
 }
 
 func (this *XTimerHandler) After(d time.Duration) <-chan struct{} {
-	if d == 0 {
-		return nil
-	}
-	tw := this.get(d)
-	if tw == nil {
-		tw = this.add(d)
-	}
-	return tw.After()
+	index := atomic.AddInt32(&this.index, 1) % this.buckets
+	return this.handers[index].After(d)
 }
 
 func (this *XTimerHandler) AfterFunc(d time.Duration, task func()) {
-	if d == 0 {
-		go task()
-	}
-	tw := this.get(d)
-	if tw == nil {
-		tw = this.add(d)
-	}
-	if tw == nil {
-		go task()
-	} else {
-		tw.AfterFunc(task)
-	}
+	index := atomic.AddInt32(&this.index, 1) % this.buckets
+	this.handers[index].AfterFunc(d, task)
 }
 
 func (this *XTimerHandler) Stop() {
-	this.RLock()
-	for _, v := range this.timermap {
+	for _, v := range this.handers {
 		v.Stop()
 	}
-	defer this.RUnlock()
 }

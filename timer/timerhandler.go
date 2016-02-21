@@ -1,79 +1,71 @@
 package timer
 
 import (
-	"sync"
 	"time"
 )
 
+//1s = 100ms *10
+//1min = 100ms * 100 * 6
+//1hour = 3.60 * 100 * 100 * 100ms
+
+var (
+	globalBaseTime         = time.Millisecond * 100
+	BUCKET_CNT             = 5
+	ELEMENT_CNT_PER_BUCKET = []int64{256, 64, 64, 64, 64}
+	RIGHT_SHIFT_PER_BUCKET = []int64{8, 6, 6, 6, 6}
+	BASE_PER_BUCKET        = []int64{1, 256, 256 * 64, 256 * 64 * 64, 256 * 64 * 64 * 64}
+)
+
 type TimerHandler struct {
-	sync.RWMutex
-	timermap map[time.Duration]*TimeWheel
+	timerWheels *XTimeWheel
+	baseTime    time.Duration
 }
 
-func NewTimerHandler() *TimerHandler {
-	return &TimerHandler{
-		timermap: make(map[time.Duration]*TimeWheel),
-	}
+func (this *TimerHandler) init() {
+	this.timerWheels = NewXTimeWheel(this.baseTime, ELEMENT_CNT_PER_BUCKET)
 }
 
-func (this *TimerHandler) get(d time.Duration) *TimeWheel {
-	var tw *TimeWheel
-	this.RLock()
-	tw, _ = this.timermap[d]
-	this.RUnlock()
-	return tw
-}
-
-func (this *TimerHandler) add(d time.Duration) *TimeWheel {
-	p := time.Second
-	i := int64(0)
-	if d >= time.Microsecond {
-		p = d / 10
-		i = 10
+func NewTimerHandler(baseTime ...time.Duration) *TimerHandler {
+	var d time.Duration
+	if len(baseTime) > 0 {
+		d = baseTime[0]
 	} else {
-		p = time.Nanosecond
+		d = globalBaseTime
 	}
-
-	if i == 0 {
-		return nil
+	th := &TimerHandler{
+		baseTime: d,
 	}
-	tw := NewTimeWheel(p, int(i))
-	this.Lock()
-	this.timermap[d] = tw
-	this.Unlock()
-	return tw
+	th.init()
+	return th
 }
+
+//func (this *TimerHandler) get(d time.Duration) (int, bool) {
+//	nd := int64(d / this.baseTime)
+
+//	if nd < BASE_PER_BUCKET[0] {
+//		return 0, false
+//	} else if nd < BASE_PER_BUCKET[1] {
+//		return 0, true
+//	} else if nd < BASE_PER_BUCKET[2] {
+//		return 1, true
+//	} else if nd < BASE_PER_BUCKET[3] {
+//		return 2, true
+//	} else if nd < BASE_PER_BUCKET[4] {
+//		return 3, true
+//	} else {
+//		return 4, true
+//	}
+//	return 0, false
+//}
 
 func (this *TimerHandler) AfterFunc(d time.Duration, task func()) {
-	if d == 0 {
-		go task()
-	}
-	tw := this.get(d)
-	if tw == nil {
-		tw = this.add(d)
-	}
-	if tw == nil {
-		go task()
-	} else {
-		tw.AfterFunc(task)
-	}
+	this.timerWheels.AfterFunc(d, task)
 }
 
 func (this *TimerHandler) After(d time.Duration) <-chan struct{} {
-	if d == 0 {
-		return nil
-	}
-	tw := this.get(d)
-	if tw == nil {
-		tw = this.add(d)
-	}
-	return tw.After()
+	return this.timerWheels.After(d)
 }
 
 func (this *TimerHandler) Stop() {
-	this.RLock()
-	for _, v := range this.timermap {
-		v.Stop()
-	}
-	defer this.RUnlock()
+	this.timerWheels.Stop()
 }
