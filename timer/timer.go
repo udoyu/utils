@@ -5,21 +5,22 @@ import (
 )
 
 var (
-	baseMask     = 10
-	globalxtimer = NewXTimerHandler(baseMask)
+	globalBaseTime = time.Millisecond * 100
+	globalBaseMask = 10
+	globalxtimer   = NewXTimerHandler(globalBaseMask)
 )
 
 func ResetBaseTime(d time.Duration) {
 	globalBaseTime = d
 	oldxtimer := globalxtimer
-	globalxtimer = NewXTimerHandler(baseMask)
+	globalxtimer = NewXTimerHandler(globalBaseMask)
 	oldxtimer.Stop()
 }
 
 func ResetBaseMask(mask int) {
-	baseMask = mask
+	globalBaseMask = mask
 	oldxtimer := globalxtimer
-	globalxtimer = NewXTimerHandler(baseMask)
+	globalxtimer = NewXTimerHandler(globalBaseMask)
 	oldxtimer.Stop()
 }
 

@@ -177,9 +177,9 @@ func (this *XTimeWheel) After(d time.Duration) <-chan struct{} {
 			this.intervals[i]*int64(this.precisions[i]), d))
 	} else if interval == 0 && i == 0 {
 		c := make(chan struct{})
-		go func (c chan struct{}) {
-			select{
-				case <- time.After(d):
+		go func(c chan struct{}) {
+			select {
+			case <-time.After(d):
 				close(c)
 			}
 		}(c)

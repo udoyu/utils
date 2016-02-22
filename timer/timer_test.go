@@ -44,7 +44,7 @@ func Test_After(t *testing.T) {
 	case <-After(time.Second * 3):
 	}
 	select {
-	case <-After(time.Millisecond*100):
+	case <-After(time.Millisecond * 100):
 	}
 	ResetBaseTime(time.Millisecond * 100)
 }

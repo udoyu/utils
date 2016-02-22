@@ -9,11 +9,7 @@ import (
 //1hour = 3.60 * 100 * 100 * 100ms
 
 var (
-	globalBaseTime         = time.Millisecond * 100
-	BUCKET_CNT             = 5
 	ELEMENT_CNT_PER_BUCKET = []int64{256, 64, 64, 64, 64}
-	RIGHT_SHIFT_PER_BUCKET = []int64{8, 6, 6, 6, 6}
-	BASE_PER_BUCKET        = []int64{1, 256, 256 * 64, 256 * 64 * 64, 256 * 64 * 64 * 64}
 )
 
 type Timer struct {
@@ -38,25 +34,6 @@ func NewTimer(baseTime ...time.Duration) *Timer {
 	th.init()
 	return th
 }
-
-//func (this *TimerHandler) get(d time.Duration) (int, bool) {
-//	nd := int64(d / this.baseTime)
-
-//	if nd < BASE_PER_BUCKET[0] {
-//		return 0, false
-//	} else if nd < BASE_PER_BUCKET[1] {
-//		return 0, true
-//	} else if nd < BASE_PER_BUCKET[2] {
-//		return 1, true
-//	} else if nd < BASE_PER_BUCKET[3] {
-//		return 2, true
-//	} else if nd < BASE_PER_BUCKET[4] {
-//		return 3, true
-//	} else {
-//		return 4, true
-//	}
-//	return 0, false
-//}
 
 func (this *Timer) AfterFunc(d time.Duration, task func()) {
 	this.timerWheels.AfterFunc(d, task)
