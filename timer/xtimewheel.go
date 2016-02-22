@@ -18,6 +18,36 @@ type XMutexList struct {
 	Elems     []*list.List
 	ElenIndex int
 	c         chan struct{}
+	cmap      map[time.Duration]chan struct{}
+	cmapLock  sync.Mutex
+}
+
+func (ml *XMutexList) AddChan(d time.Duration) (c chan struct{}, f func()) {
+	var ok bool
+	ml.cmapLock.Lock()
+	if ml.cmap == nil {
+		ml.cmap = make(map[time.Duration]chan struct{})
+	}
+	c, ok = ml.cmap[d]
+	if !ok {
+		c = make(chan struct{})
+		ml.cmap[d] = c
+		f = func() { close(c) }
+	}
+	ml.cmapLock.Unlock()
+
+	return c, f
+}
+
+func (ml *XMutexList) AddTask(d time.Duration, f func()) {
+	ml.Lock()
+	if len(ml.Elems) == 0 || ml.Elems[ml.ElenIndex-1].Len() > 1000 {
+		ml.Elems = append(ml.Elems, list.New())
+		ml.ElenIndex++
+	}
+
+	ml.Elems[ml.ElenIndex-1].PushBack(TaskNode{activeTime: d, task: f})
+	ml.Unlock()
 }
 
 type XTimeWheel struct {
@@ -91,7 +121,7 @@ func (tw *XTimeWheel) onTimer(i int) {
 				e := elems.Front()
 				if e != nil {
 					for ; e != nil; e = e.Next() {
-						tn := e.Value.(*TaskNode)
+						tn := e.Value.(TaskNode)
 						nextTime := tn.activeTime % tw.precisions[i]
 						if nextTime == 0 ||
 							i == 0 {
@@ -136,6 +166,7 @@ func (this *XTimeWheel) After(d time.Duration) <-chan struct{} {
 		}
 	}
 	d += time.Duration(atomic.LoadInt64(&this.offset[i])) * this.precisions[0]
+	d -= d % this.precisions[0]
 	interval := int64(d / this.precisions[i])
 	if interval > this.intervals[i] {
 		panic(fmt.Errorf("TimeWheel wrong after time, interval=%d and aftertime=%d",
@@ -147,23 +178,23 @@ func (this *XTimeWheel) After(d time.Duration) <-chan struct{} {
 	index := (atomic.LoadInt64(&this.curIndexs[i]) + interval - 1) % this.intervals[i]
 	ml := &this.tasks[i][index]
 	var c chan struct{} = nil
-	ml.Lock()
-	if i == 0 {
-		if ml.c == nil {
-			ml.c = make(chan struct{})
+	if i != 0 {
+		var f func()
+		c, f = ml.AddChan(d)
+		if f != nil {
+			ml.AddTask(d, f)
 		}
-		c = ml.c
 	} else {
-		c = make(chan struct{})
-		f := func() { close((c)) }
-		if len(ml.Elems) == 0 || ml.Elems[ml.ElenIndex-1].Len() > 1000 {
-			ml.Elems = append(ml.Elems, list.New())
-			ml.ElenIndex++
+		ml.Lock()
+		if i == 0 {
+			if ml.c == nil {
+				ml.c = make(chan struct{})
+			}
+			c = ml.c
 		}
-		
-		ml.Elems[ml.ElenIndex-1].PushBack(&TaskNode{activeTime: d, task: f})
+		ml.Unlock()
 	}
-	ml.Unlock()
+
 	return c
 }
 
@@ -185,14 +216,7 @@ func (this *XTimeWheel) AfterFunc(d time.Duration, f func()) {
 
 	index := (atomic.LoadInt64(&this.curIndexs[i]) + interval - 1) % this.intervals[i]
 	ml := &this.tasks[i][index]
-	ml.Lock()
-	if len(ml.Elems) == 0 || ml.Elems[ml.ElenIndex-1].Len() > 1000 {
-		ml.Elems = append(ml.Elems, list.New())
-		ml.ElenIndex++
-	}
-
-	ml.Elems[ml.ElenIndex-1].PushBack(&TaskNode{activeTime: d, task: f})
-	ml.Unlock()
+	ml.AddTask(d, f)
 }
 
 func (this *XTimeWheel) Stop() {
