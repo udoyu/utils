@@ -6,18 +6,18 @@ import (
 )
 
 type XTimerHandler struct {
-	handers []*TimerHandler
+	handers []*Timer
 	buckets int32
 	index   int32
 }
 
 func NewXTimerHandler(buckets int) *XTimerHandler {
 	xtw := &XTimerHandler{
-		handers: make([]*TimerHandler, buckets),
+		handers: make([]*Timer, buckets),
 		buckets: int32(buckets),
 	}
 	for i := 0; i < buckets; i++ {
-		xtw.handers[i] = NewTimerHandler()
+		xtw.handers[i] = NewTimer()
 	}
 	return xtw
 }

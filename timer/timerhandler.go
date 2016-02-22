@@ -16,23 +16,23 @@ var (
 	BASE_PER_BUCKET        = []int64{1, 256, 256 * 64, 256 * 64 * 64, 256 * 64 * 64 * 64}
 )
 
-type TimerHandler struct {
+type Timer struct {
 	timerWheels *XTimeWheel
 	baseTime    time.Duration
 }
 
-func (this *TimerHandler) init() {
+func (this *Timer) init() {
 	this.timerWheels = NewXTimeWheel(this.baseTime, ELEMENT_CNT_PER_BUCKET)
 }
 
-func NewTimerHandler(baseTime ...time.Duration) *TimerHandler {
+func NewTimer(baseTime ...time.Duration) *Timer {
 	var d time.Duration
 	if len(baseTime) > 0 {
 		d = baseTime[0]
 	} else {
 		d = globalBaseTime
 	}
-	th := &TimerHandler{
+	th := &Timer{
 		baseTime: d,
 	}
 	th.init()
@@ -58,14 +58,14 @@ func NewTimerHandler(baseTime ...time.Duration) *TimerHandler {
 //	return 0, false
 //}
 
-func (this *TimerHandler) AfterFunc(d time.Duration, task func()) {
+func (this *Timer) AfterFunc(d time.Duration, task func()) {
 	this.timerWheels.AfterFunc(d, task)
 }
 
-func (this *TimerHandler) After(d time.Duration) <-chan struct{} {
+func (this *Timer) After(d time.Duration) <-chan struct{} {
 	return this.timerWheels.After(d)
 }
 
-func (this *TimerHandler) Stop() {
+func (this *Timer) Stop() {
 	this.timerWheels.Stop()
 }

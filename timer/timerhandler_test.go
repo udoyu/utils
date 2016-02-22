@@ -7,7 +7,7 @@ import (
 )
 
 func Test_TimerHandlerAfterFunc(t *testing.T) {
-	timer := NewTimerHandler()
+	timer := NewTimer()
 	defer timer.Stop()
 	{
 		i := int32(0)
@@ -25,7 +25,7 @@ func Test_TimerHandlerAfterFunc(t *testing.T) {
 }
 
 func Test_TimerHandlerAfter(t *testing.T) {
-	timer := NewTimerHandler()
+	timer := NewTimer()
 	defer timer.Stop()
 	select {
 	case <-timer.After(time.Second):
@@ -35,7 +35,7 @@ func Test_TimerHandlerAfter(t *testing.T) {
 }
 
 func Benchmark_TimerHandlerAfterFunc(b *testing.B) {
-	timer := NewTimerHandler()
+	timer := NewTimer()
 	defer timer.Stop()
 	for i := 0; i < b.N; i++ {
 		timer.AfterFunc(time.Second, func() {})
@@ -43,7 +43,7 @@ func Benchmark_TimerHandlerAfterFunc(b *testing.B) {
 }
 
 func Benchmark_TimerHandlerAfter(b *testing.B) {
-	timer := NewTimerHandler()
+	timer := NewTimer()
 	defer timer.Stop()
 	for i := 0; i < b.N; i++ {
 		timer.After(time.Second)
@@ -51,7 +51,7 @@ func Benchmark_TimerHandlerAfter(b *testing.B) {
 }
 
 func Benchmark_TimerHandlerAfterFuncAdd(b *testing.B) {
-	timer := NewTimerHandler()
+	timer := NewTimer()
 	defer timer.Stop()
 	bt := globalBaseTime * 2000
 	for i := 0; i < b.N; i++ {
@@ -60,7 +60,7 @@ func Benchmark_TimerHandlerAfterFuncAdd(b *testing.B) {
 }
 
 func Benchmark_TimerHandleron(b *testing.B) {
-	timer := NewTimerHandler()
+	timer := NewTimer()
 	defer timer.Stop()
 	for i := 0; i < b.N; i++ {
 		//_ = bt%time.Duration(BASE_PER_BUCKET[1])
