@@ -42,7 +42,6 @@ func Benchmark_XTimerHandlerAfterFunc(b *testing.B) {
 func Benchmark_XTimerHandlerAfter(b *testing.B) {
 	timer := NewXTimerHandler(256)
 	defer timer.Stop()
-	defer timer.Stop()
 	for i := 0; i < b.N; i++ {
 		timer.After(time.Second)
 	}
