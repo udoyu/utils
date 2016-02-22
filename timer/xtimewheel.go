@@ -27,12 +27,16 @@ func (ml *XMutexList) AddChan(d time.Duration) (c chan struct{}, f func()) {
 	ml.cmapLock.Lock()
 	if ml.cmap == nil {
 		ml.cmap = make(map[time.Duration]chan struct{})
-	}
-	c, ok = ml.cmap[d]
-	if !ok {
 		c = make(chan struct{})
 		ml.cmap[d] = c
 		f = func() { close(c) }
+	} else {
+		c, ok = ml.cmap[d]
+		if !ok {
+			c = make(chan struct{})
+			ml.cmap[d] = c
+			f = func() { close(c) }
+		}
 	}
 	ml.cmapLock.Unlock()
 
