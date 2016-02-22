@@ -176,7 +176,14 @@ func (this *XTimeWheel) After(d time.Duration) <-chan struct{} {
 		panic(fmt.Errorf("TimeWheel wrong after time, interval=%d and aftertime=%d",
 			this.intervals[i]*int64(this.precisions[i]), d))
 	} else if interval == 0 && i == 0 {
-		return nil
+		c := make(chan struct{})
+		go func (c chan struct{}) {
+			select{
+				case <- time.After(d):
+				close(c)
+			}
+		}(c)
+		return c
 	}
 
 	index := (atomic.LoadInt64(&this.curIndexs[i]) + interval - 1) % this.intervals[i]
