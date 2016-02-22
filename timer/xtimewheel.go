@@ -74,12 +74,16 @@ func (tw *XTimeWheel) onTimer(i int) {
 	var c chan struct{} = nil
 	ml.Lock()
 	c = ml.c
+	ml.c = nil
 	elems = ml.Elems
 	ml.Elems = nil
 	ml.ElenIndex = 0
 	ml.Unlock()
 	if c != nil {
 		close(c)
+	}
+	if elems == nil {
+		return
 	}
 	go func(elems []*list.List, tw *XTimeWheel, i int) {
 		for _, v := range elems {
@@ -131,6 +135,7 @@ func (this *XTimeWheel) After(d time.Duration) <-chan struct{} {
 			break
 		}
 	}
+	d += time.Duration(atomic.LoadInt64(&this.offset[i])) * this.precisions[0]
 	interval := int64(d / this.precisions[i])
 	if interval > this.intervals[i] {
 		panic(fmt.Errorf("TimeWheel wrong after time, interval=%d and aftertime=%d",
@@ -155,7 +160,7 @@ func (this *XTimeWheel) After(d time.Duration) <-chan struct{} {
 			ml.Elems = append(ml.Elems, list.New())
 			ml.ElenIndex++
 		}
-		d += time.Duration(this.offset[i]) * this.precisions[0]
+		
 		ml.Elems[ml.ElenIndex-1].PushBack(&TaskNode{activeTime: d, task: f})
 	}
 	ml.Unlock()

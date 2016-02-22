@@ -35,8 +35,12 @@ func Test_AfterFunc(t *testing.T) {
 }
 
 func Test_After(t *testing.T) {
+	ResetBaseTime(time.Millisecond*10)
 	select {
 	case <-After(time.Second):
+	}
+	select {
+	case <-After(time.Second * 10):
 	}
 }
 
