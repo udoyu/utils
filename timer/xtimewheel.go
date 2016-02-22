@@ -81,24 +81,25 @@ func (tw *XTimeWheel) onTimer(i int) {
 	if c != nil {
 		close(c)
 	}
-
-	for _, v := range elems {
-		go func(elems *list.List, tw *XTimeWheel, i int) {
-			e := elems.Front()
-			if e != nil {
-				for ; e != nil; e = e.Next() {
-					tn := e.Value.(*TaskNode)
-					nextTime := tn.activeTime % tw.precisions[i]
-					if nextTime == 0 ||
-						i == 0 {
-						tn.task()
-					} else {
-						tw.AfterFunc(nextTime, tn.task)
+	go func(elems []*list.List, tw *XTimeWheel, i int) {
+		for _, v := range elems {
+			go func(elems *list.List, tw *XTimeWheel, i int) {
+				e := elems.Front()
+				if e != nil {
+					for ; e != nil; e = e.Next() {
+						tn := e.Value.(*TaskNode)
+						nextTime := tn.activeTime % tw.precisions[i]
+						if nextTime == 0 ||
+							i == 0 {
+							tn.task()
+						} else {
+							tw.AfterFunc(nextTime, tn.task)
+						}
 					}
 				}
-			}
-		}(v, tw, i)
-	}
+			}(v, tw, i)
+		}
+	}(elems, tw, i)
 }
 func (this *XTimeWheel) start() {
 	go func(tw *XTimeWheel) {
@@ -109,8 +110,8 @@ func (this *XTimeWheel) start() {
 			case <-tw.ticker.C:
 				for i := 0; i < this.bucket_cnt; i++ {
 					if tw.UpdateOffset(i) == 0 {
-						go tw.onTimer(i)
-					} 
+						tw.onTimer(i)
+					}
 				}
 			}
 		}

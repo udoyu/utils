@@ -7,7 +7,7 @@ import (
 )
 
 func Test_XTimerHandlerAfterFunc(t *testing.T) {
-	timer := NewXTimerHandler(256)
+	timer := NewXTimerHandler(10)
 	defer timer.Stop()
 	{
 		i := int32(0)
