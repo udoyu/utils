@@ -39,14 +39,14 @@ func Test_After(t *testing.T) {
 	case <-After(time.Second):
 	}
 
-	ResetBaseTime(time.Millisecond * 10)
+	ResetPrecision(time.Millisecond * 10, true)
 	select {
 	case <-After(time.Second * 3):
 	}
 	select {
 	case <-After(time.Millisecond * 100):
 	}
-	ResetBaseTime(time.Millisecond * 100)
+	ResetPrecision(time.Millisecond * 100, true)
 }
 
 func Benchmark_AfterFunc(b *testing.B) {

@@ -5,23 +5,37 @@ import (
 )
 
 var (
-	globalBaseTime = time.Millisecond * 100
-	globalBaseMask = 10
-	globalxtimer   = NewXTimerHandler(globalBaseMask)
+	globalPrecision = time.Millisecond * 100
+	globalBaseMask  = 10
+	globalxtimer    = NewXTimerHandler(globalBaseMask)
 )
 
-func ResetBaseTime(d time.Duration) {
-	globalBaseTime = d
+func ResetPrecision(precision time.Duration, stop ...bool) {
+	globalPrecision = precision
 	oldxtimer := globalxtimer
 	globalxtimer = NewXTimerHandler(globalBaseMask)
-	oldxtimer.Stop()
+	if len(stop) > 0 && stop[0] {
+		oldxtimer.Stop()
+	}
 }
 
-func ResetBaseMask(mask int) {
+func ResetMask(mask int, stop ...bool) {
 	globalBaseMask = mask
 	oldxtimer := globalxtimer
 	globalxtimer = NewXTimerHandler(globalBaseMask)
-	oldxtimer.Stop()
+	if len(stop) > 0 && stop[0] {
+		oldxtimer.Stop()
+	}
+}
+
+func ResetPrecisionAndMask(precision time.Duration, mask int,stop ...bool) {
+	globalPrecision = precision
+	globalBaseMask = mask
+	oldxtimer := globalxtimer
+	globalxtimer = NewXTimerHandler(globalBaseMask)
+	if len(stop) > 0 && stop[0] {
+		oldxtimer.Stop()
+	}
 }
 
 func After(d time.Duration) <-chan struct{} {

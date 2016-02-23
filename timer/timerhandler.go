@@ -26,7 +26,7 @@ func NewTimer(baseTime ...time.Duration) *Timer {
 	if len(baseTime) > 0 {
 		d = baseTime[0]
 	} else {
-		d = globalBaseTime
+		d = globalPrecision
 	}
 	th := &Timer{
 		baseTime: d,
