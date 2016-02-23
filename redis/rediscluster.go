@@ -339,7 +339,7 @@ func (self *RedisCluster) SendClusterCommand(flush bool, cmd string, args ...int
 			if self.Debug {
 				fmt.Println("ASKING")
 			}
-			redis.Send("ASKING")
+			redis.Do("ASKING")
 			asking = false
 		}
 
