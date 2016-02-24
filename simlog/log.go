@@ -1,8 +1,8 @@
 package simlog
 
-// from beego
-
-import ()
+import (
+	"log"
+)
 
 //--------------------
 // LOG LEVEL
@@ -46,11 +46,17 @@ const (
 )
 
 var (
+	LogFlag =log.Ldate|log.Ltime|log.Lmicroseconds|log.Llongfile
 	Logger LogInterface = &LogHandler{
 		level: LevelTrace,
 		MaxDataSize : 4096,
 	}
 )
+
+
+func init () {
+	log.SetFlags(LogFlag)
+}
 
 func Trace(v ...interface{}) {
 	Logger.Trace(v...)

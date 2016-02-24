@@ -150,7 +150,7 @@ func (this *LogHandler) Init(path string, maxday int, loglevel Level) {
 			fmt.Printf("log Start|open log file %s|%s\n", this.fileName, err.Error())
 			os.Exit(-1)
 		}
-		this.logger = log.New(this.file, "\n", log.Ldate|log.Ltime|log.Llongfile)
+		this.logger = log.New(this.file, "\n", LogFlag)
 		this.initlogfile()
 		this.movelogdir()
 		this.removelogdir(this.MaxDay, now)
