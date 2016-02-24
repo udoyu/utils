@@ -229,7 +229,7 @@ func (this *LogHandler) changelogfile(date time.Time) {
 		return
 	}
 	this.size = 0
-	this.logger = log.New(this.file, "\n", log.Ldate|log.Ltime|log.Llongfile)
+	this.logger = log.New(this.file, "\n", LogFlag)
 }
 
 func (this *LogHandler) initlogfile() {
