@@ -20,6 +20,14 @@ type AliPay struct {
 	rsaPublicKey  *rsa.PublicKey  // rsa public key
 }
 
+func (this AliPay) RsaPrivateKey() *rsa.PrivateKey {
+	return this.rsaPrivateKey
+}
+
+func (this AliPay) RsaPublicKey() *rsa.PublicKey {
+	return this.rsaPublicKey
+}
+
 func NewAliPay(partner, sellerEmail, returnUrl, notifyUrl,
 	md5Key, rsaPrivPEM, rsaPubcPEM string) (AliPay, error) {
 	ap := AliPay{
@@ -93,6 +101,7 @@ func (this AliPay) Sign(form url.Values) (string, error) {
 	if sign_type == "MD5" {
 		return MD5Sign(kvs.String(), this.md5Key), nil
 	} else if sign_type == "RSA" || sign_type == "\"RSA\"" {
+		fmt.Println(kvs.String())
 		signBytes, err := RSASignToBytes(kvs.String(), this.rsaPrivateKey)
 		if err != nil {
 			return "", err
@@ -101,6 +110,10 @@ func (this AliPay) Sign(form url.Values) (string, error) {
 		return sign, nil
 	}
 	return "", errors.New(fmt.Sprint("Error 104 : Unkown SignType ", sign_type))
+}
+
+func (this AliPay) SignStr(str string) ([]byte ,error) {
+	return RSASignToBytes(str, this.rsaPrivateKey)
 }
 
 // 生成订单的参数
