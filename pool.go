@@ -190,7 +190,6 @@ func (this *Pool) get() (PoolElemInterface, error) {
 			select {
 			case conn = <-this.elems:
 				atomic.AddInt32(&this.elemsSize, -1)
-				fmt.Println("return e")
 			case <-time.After(time.Second * 2):
 				return nil, fmt.Errorf("Error 0001 : too many active conn, maxActive=%d", this.maxActive)
 			}
