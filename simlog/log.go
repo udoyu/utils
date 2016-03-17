@@ -46,16 +46,15 @@ const (
 )
 
 var (
-	LogFlag =log.Ldate|log.Ltime|log.Lmicroseconds|log.Llongfile
-	Logger LogInterface = &LogHandler{
-		level: LevelTrace,
-		MaxDataSize : 4096,
+	LogFlag              = log.Ldate | log.Ltime | log.Lmicroseconds | log.Llongfile
+	Logger  LogInterface = &LogHandler{
+		level:       LevelTrace,
+		MaxDataSize: 4096,
 	}
 )
 
-
-func init () {
-	log.SetFlags(LogFlag)
+func init() {
+	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds)
 }
 
 func Trace(v ...interface{}) {

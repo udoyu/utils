@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -29,36 +30,67 @@ type LogHandler struct {
 	MaxDay      int   //保存文件最大天数，传参设定
 	MaxSize     int   //日志判断周期，即生成MAXLOGCNT条日志后开始判断当前文件是否超过设定大小
 	logger      *log.Logger
-	level       Level      //日志级别
-	splitFlag   bool       //是否根据文件大小切割
-	logPath     string     //日志根目录，传参设定
-	logDate     time.Time  //当天的日期，用来判断日期是否改变
-	filePath    string     //日志文件路径，由logbasepath+当前日期得到
-	fileIndex   int        //日志文件当前序号
-	fileName    string     //日志文件名，由logfilepath+logfileindex.log得到
-	file        *os.File   //日志文件
-	lock        sync.Mutex //日志锁，在改变全局变量时需要用到
-	size        int        //当前日志条数，用来和日志判断周期比较，避免频繁判断文件大小
+	level      Level      //日志级别
+	splitFlag  bool       //是否根据文件大小切割
+	logPath    string     //日志根目录，传参设定
+	logDate    time.Time  //当天的日期，用来判断日期是否改变
+	filePath   string     //日志文件路径，由logbasepath+当前日期得到
+	fileIndex  int        //日志文件当前序号
+	fileName   string     //日志文件名，由logfilepath+logfileindex.log得到
+	file       *os.File   //日志文件
+	lock       sync.Mutex //日志锁，在改变全局变量时需要用到
+	size       int        //当前日志条数，用来和日志判断周期比较，避免频繁判断文件大小
+	strBuf     chan string
+	bufferLock sync.Mutex
+}
+
+func (this *LogHandler) logWrite() {
+	for {
+		select {
+		case str := <-this.strBuf:
+			fmt.Fprintln(this.file, str)
+			this.size += len(str)
+			this.logSplit()
+		}
+	}
 }
 
 func (this *LogHandler) OutPut(level Level, v ...interface{}) {
+
 	if this.level <= level {
-		str := fmt.Sprint(v...)
+		funcName, _, fileno, _ := runtime.Caller(3)
+		str := fmt.Sprintf("%s %s:%d:%s%s",
+			time.Now().Format("2006-01-02 15:04:05.999"),
+			runtime.FuncForPC(funcName).Name(), fileno, level.String(), fmt.Sprint(v...))
+		if len(str) > this.MaxDataSize {
+			str = str[:this.MaxDataSize]
+		}
+		if this.file != nil {
+			this.strBuf <- str
+		} else {
+			fmt.Println(str)
+		}
+	}
+
+/*
+	if this.level <= level {
+
+		str := level.String() + fmt.Sprint(v...)
 		size := len(str)
 		if size > this.MaxDataSize {
 			size = this.MaxDataSize
 		}
 		if this.logger != nil {
-
+			this.logger.Output(4, str[:size])
 			this.lock.Lock()
-			this.logger.Output(4, level.String()+str[:size])
 			this.size += size
 			this.logSplit()
 			this.lock.Unlock()
 		} else {
-			log.Println(level.String() + str[:size])
+			log.Println(str[:size])
 		}
 	}
+*/
 }
 
 func (this *LogHandler) Trace(v ...interface{}) {
@@ -140,21 +172,21 @@ func (this *LogHandler) Init(path string, maxday int, loglevel Level) {
 	if this.BaseName == "" {
 		this.BaseName = "all.log"
 	}
-	
-	
-	if this.logger == nil {
-		this.fileName = this.filePath + this.BaseName
 
+	if this.file == nil {
+		this.fileName = this.filePath + this.BaseName
+		this.strBuf = make(chan string, 10240)
 		this.file, err = OpenAndCreateFile(this.fileName, os.O_APPEND)
 		if nil != err {
 			fmt.Printf("log Start|open log file %s|%s\n", this.fileName, err.Error())
-			os.Exit(-1)
+			panic(err)
 		}
 		this.logger = log.New(this.file, "\n", LogFlag)
 		this.initlogfile()
 		this.movelogdir()
 		this.removelogdir(this.MaxDay, now)
 		go this.changelogdate()
+		go this.logWrite()
 	}
 }
 
@@ -163,7 +195,9 @@ func (this *LogHandler) Close() {
 		this.lock.Lock()
 		defer this.lock.Unlock()
 		this.logger = nil
-		this.file.Close()
+		f := this.file
+		this.file = nil
+		f.Close()
 	}
 }
 
