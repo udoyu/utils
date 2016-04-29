@@ -1,6 +1,9 @@
 package redis
 
-import "strings"
+import (
+	"strings"
+	"sync"
+)
 import "strconv"
 import "errors"
 import "math/rand"
@@ -15,6 +18,7 @@ type RedisCluster struct {
 	SeedHosts        map[string]bool
 	Handles          map[string]*RedisHandle
 	Slots            map[uint16]string
+	slotMutex        sync.RWMutex
 	RefreshTableASAP bool
 	SingleRedisMode  bool
 	MaxIdle          int
@@ -130,17 +134,21 @@ func (self *RedisCluster) populateSlotsCache() {
 							min, _ := strconv.Atoi(r_pieces[0])
 							max, _ := strconv.Atoi(r_pieces[1])
 							for i := min; i <= max; i++ {
+								self.slotMutex.Lock()
 								self.Slots[uint16(i)] = addr
+								self.slotMutex.Unlock()
 							}
 						}
 					}
 				}
 			}
 			if self.Debug {
+				self.slotMutex.RLock()
 				fmt.Println("[RedisCluster] [Initializing] DONE, ",
 					"Slots: ", len(self.Slots),
 					"Handles So Far:", len(self.Handles),
 					"SeedList:", len(self.SeedHosts))
+				self.slotMutex.RUnlock()
 			}
 			break
 		}
@@ -152,9 +160,14 @@ func (self *RedisCluster) switchToSingleModeIfNeeded() {
 	// catch case where we really intend to be on
 	// single redis mode, but redis was not
 	// started on time
-	if len(self.SeedHosts) == 1 &&
-		len(self.Slots) == 0 &&
-		len(self.Handles) == 1 {
+	self.slotMutex.RLock()
+	slotLen := len(self.Slots)
+	self.slotMutex.RUnlock()
+	seedHostsLen := len(self.SeedHosts)
+	handlesLen := len(self.Handles)
+	if seedHostsLen == 1 &&
+		slotLen == 0 &&
+		handlesLen == 1 {
 		for _, node := range self.Handles {
 			cluster_enabled := self.hasClusterEnabled(node)
 			if cluster_enabled == false {
@@ -223,8 +236,9 @@ func (self *RedisCluster) RandomRedisHandle() *RedisHandle {
 // Make sure to create a connection with the node if we don't have
 // one.
 func (self *RedisCluster) RedisHandleForSlot(slot uint16) *RedisHandle {
-
+	self.slotMutex.RLock()
 	node, exists := self.Slots[slot]
+	self.slotMutex.RUnlock()
 	// If we don't know what the mapping is, return a random node.
 	if !exists {
 		if self.Debug {
@@ -378,9 +392,15 @@ func (self *RedisCluster) SendClusterCommand(flush bool, cmd string, args ...int
 				SetRefreshNeeded()
 				newslot, _ := strconv.Atoi(errv[1])
 				newaddr := errv[2]
+				self.slotMutex.Lock()
 				self.Slots[uint16(newslot)] = newaddr
+				self.slotMutex.Unlock()
+
 				if self.Debug {
-					fmt.Println("[RedisCluster] MOVED newaddr: ", newaddr, "new slot: ", newslot, "my slots len: ", len(self.Slots))
+					self.slotMutex.RLock()
+					slotLen := len(self.Slots)
+					self.slotMutex.RUnlock()
+					fmt.Println("[RedisCluster] MOVED newaddr: ", newaddr, "new slot: ", newslot, "my slots len: ", slotLen)
 				}
 			}
 		} else {
