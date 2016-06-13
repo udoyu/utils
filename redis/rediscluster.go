@@ -1,9 +1,6 @@
-package redis
+package redis 
 
-import (
-	"strings"
-	"sync"
-)
+import "strings"
 import "strconv"
 import "errors"
 import "math/rand"
@@ -18,7 +15,6 @@ type RedisCluster struct {
 	SeedHosts        map[string]bool
 	Handles          map[string]*RedisHandle
 	Slots            map[uint16]string
-	slotMutex        sync.RWMutex
 	RefreshTableASAP bool
 	SingleRedisMode  bool
 	MaxIdle          int
@@ -45,7 +41,12 @@ func NewRedisCluster(addrs []string, max_idle, max_active int, debug bool) Redis
 	}
 
 	for addr, _ := range cluster.SeedHosts {
-		node := cluster.addRedisHandleIfNeeded(addr)
+		node, ok := cluster.Handles[addr]
+		if !ok {
+			node = NewRedisHandle(addr, cluster.MaxIdle, cluster.MaxActive, cluster.Debug)
+			cluster.Handles[addr] = node
+		}
+
 		cluster_enabled := cluster.hasClusterEnabled(node)
 		if cluster_enabled == false {
 			if len(cluster.SeedHosts) == 1 {
@@ -80,6 +81,24 @@ func (self *RedisCluster) SetLifeTime(t int) {
 	}
 }
 
+func (self *RedisCluster) TestCluster() error {
+	for _, rh := range self.Handles {
+		_, err := rh.Do("CLUSTER", "INFO")
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (self *RedisCluster) GetHandle(key string) *RedisHandle {
+	return self.HandleForKey(key)
+}
+
+func (self *RedisCluster) Do(cmd string, args ...interface{}) (reply interface{}, err error) {
+	return self.SendClusterCommand(cmd, args...)
+}
+
 func (self *RedisCluster) hasClusterEnabled(node *RedisHandle) bool {
 	_, err := node.Do("CLUSTER", "INFO")
 	if err != nil {
@@ -100,11 +119,30 @@ func (self *RedisCluster) populateSlotsCache() {
 	if self.Debug {
 		fmt.Println("[RedisCluster], PID", os.Getpid(), "[PopulateSlots Running]")
 	}
+	seedHosts := make(map[string]bool)
+	handles := make(map[string]*RedisHandle)
+	slotsMap := make(map[uint16]string)
+	for k, v := range self.SeedHosts {
+		seedHosts[k] = v
+	}
+	for k, v := range self.Handles {
+		handles[k] = v
+	}
+	for k, v := range self.Slots {
+		slotsMap[k] = v
+	}
 	for name, _ := range self.SeedHosts {
 		if self.Debug {
 			fmt.Println("[RedisCluster] [PopulateSlots] Checking: ", name)
 		}
-		node := self.addRedisHandleIfNeeded(name)
+		var (
+			node *RedisHandle
+			ok   bool
+		)
+		if node, ok = handles[name]; !ok {
+			node = NewRedisHandle(name, self.MaxIdle, self.MaxActive, self.Debug)
+			handles[name] = node
+		}
 		cluster_info, err := node.Do("CLUSTER", "NODES")
 		if err == nil {
 			lines := strings.Split(string(cluster_info.([]uint8)), "\n")
@@ -116,12 +154,12 @@ func (self *RedisCluster) populateSlotsCache() {
 						addr = name
 					}
 					// add to seedlist if not in cluster
-					_, seedlist_exists := self.SeedHosts[addr]
-					if !seedlist_exists {
-						self.SeedHosts[addr] = true
-					}
+					seedHosts[addr] = true
+
 					// add to handles if not in handles
-					self.addRedisHandleIfNeeded(name)
+					if _, ok := handles[name]; !ok {
+						handles[name] = NewRedisHandle(addr, self.MaxIdle, self.MaxActive, self.Debug)
+					}
 
 					slots := fields[8:len(fields)]
 					for _, s_range := range slots {
@@ -134,25 +172,24 @@ func (self *RedisCluster) populateSlotsCache() {
 							min, _ := strconv.Atoi(r_pieces[0])
 							max, _ := strconv.Atoi(r_pieces[1])
 							for i := min; i <= max; i++ {
-								self.slotMutex.Lock()
-								self.Slots[uint16(i)] = addr
-								self.slotMutex.Unlock()
+								slotsMap[uint16(i)] = addr
 							}
 						}
 					}
 				}
 			}
 			if self.Debug {
-				self.slotMutex.RLock()
 				fmt.Println("[RedisCluster] [Initializing] DONE, ",
-					"Slots: ", len(self.Slots),
-					"Handles So Far:", len(self.Handles),
-					"SeedList:", len(self.SeedHosts))
-				self.slotMutex.RUnlock()
+					"Slots: ", len(slotsMap),
+					"Handles So Far:", len(handles),
+					"SeedList:", len(seedHosts))
 			}
 			break
 		}
 	}
+	self.SeedHosts = seedHosts
+	self.Handles = handles
+	self.Slots = slotsMap
 	self.switchToSingleModeIfNeeded()
 }
 
@@ -160,14 +197,9 @@ func (self *RedisCluster) switchToSingleModeIfNeeded() {
 	// catch case where we really intend to be on
 	// single redis mode, but redis was not
 	// started on time
-	self.slotMutex.RLock()
-	slotLen := len(self.Slots)
-	self.slotMutex.RUnlock()
-	seedHostsLen := len(self.SeedHosts)
-	handlesLen := len(self.Handles)
-	if seedHostsLen == 1 &&
-		slotLen == 0 &&
-		handlesLen == 1 {
+	if len(self.SeedHosts) == 1 &&
+		len(self.Slots) == 0 &&
+		len(self.Handles) == 1 {
 		for _, node := range self.Handles {
 			cluster_enabled := self.hasClusterEnabled(node)
 			if cluster_enabled == false {
@@ -175,14 +207,6 @@ func (self *RedisCluster) switchToSingleModeIfNeeded() {
 			}
 		}
 	}
-}
-
-func (self *RedisCluster) addRedisHandleIfNeeded(addr string) *RedisHandle {
-	_, handle_exists := self.Handles[addr]
-	if !handle_exists {
-		self.Handles[addr] = NewRedisHandle(addr, self.MaxIdle, self.MaxActive, self.Debug)
-	}
-	return self.Handles[addr]
 }
 
 func (self *RedisCluster) KeyForRequest(cmd string, args ...interface{}) string {
@@ -236,9 +260,8 @@ func (self *RedisCluster) RandomRedisHandle() *RedisHandle {
 // Make sure to create a connection with the node if we don't have
 // one.
 func (self *RedisCluster) RedisHandleForSlot(slot uint16) *RedisHandle {
-	self.slotMutex.RLock()
+
 	node, exists := self.Slots[slot]
-	self.slotMutex.RUnlock()
 	// If we don't know what the mapping is, return a random node.
 	if !exists {
 		if self.Debug {
@@ -253,7 +276,12 @@ func (self *RedisCluster) RedisHandleForSlot(slot uint16) *RedisHandle {
 		return r
 	} else {
 		r = NewRedisHandle(node, self.MaxIdle, self.MaxActive, self.Debug)
-		self.Handles[node] = r
+		handles := make(map[string]*RedisHandle)
+		for k, v := range self.Handles {
+			handles[k] = v
+		}
+		handles[node] = r
+		self.Handles = handles
 	}
 	// XXX consider returning random if failure
 	return r
@@ -267,26 +295,21 @@ func (self *RedisCluster) disconnectAll() {
 	for _, handle := range self.Handles {
 		handle.Pool.Close()
 	}
-	// nuke handles
-	for addr, _ := range self.SeedHosts {
-		delete(self.Handles, addr)
-	}
+	self.Handles = make(map[string]*RedisHandle)
+
 	// nuke slots
 	self.Slots = make(map[uint16]string)
 }
 
 func (self *RedisCluster) handleSingleMode(flush bool, cmd string, args ...interface{}) (reply interface{}, err error) {
 	for _, handle := range self.Handles {
-		if flush {
-			return handle.Do(cmd, args...)
-		}
-		return nil, handle.Send(cmd, args...)
+		return handle.Do(cmd, args...)
 	}
 	return nil, errors.New("no redis handle found for single mode")
 }
 
-func (self *RedisCluster) SendClusterCommand(flush bool, cmd string, args ...interface{}) (reply interface{}, err error) {
-
+func (self *RedisCluster) SendClusterCommand(cmd string, args ...interface{}) (reply interface{}, err error) {
+	var flush bool = true
 	// forward onto first redis in the handle
 	// if we are set to single mode
 	if self.SingleRedisMode == true {
@@ -353,7 +376,9 @@ func (self *RedisCluster) SendClusterCommand(flush bool, cmd string, args ...int
 			if self.Debug {
 				fmt.Println("ASKING")
 			}
+			//	conn := redis.GetRedisConn()
 			redis.Do("ASKING")
+			//	conn.Close()
 			asking = false
 		}
 
@@ -368,7 +393,7 @@ func (self *RedisCluster) SendClusterCommand(flush bool, cmd string, args ...int
 				}
 				return resp, nil
 			}
-		} else {
+		} /*else {
 			err = redis.Send(cmd, args...)
 			if err == nil {
 				if self.Debug {
@@ -376,7 +401,7 @@ func (self *RedisCluster) SendClusterCommand(flush bool, cmd string, args ...int
 				}
 				return nil, nil
 			}
-		}
+		}*/
 
 		// ok we are here so err is not nil
 		errv := strings.Split(err.Error(), " ")
@@ -392,15 +417,14 @@ func (self *RedisCluster) SendClusterCommand(flush bool, cmd string, args ...int
 				SetRefreshNeeded()
 				newslot, _ := strconv.Atoi(errv[1])
 				newaddr := errv[2]
-				self.slotMutex.Lock()
-				self.Slots[uint16(newslot)] = newaddr
-				self.slotMutex.Unlock()
-
+				slotsMap := make(map[uint16]string)
+				for k, v := range self.Slots {
+					slotsMap[k] = v
+				}
+				slotsMap[uint16(newslot)] = newaddr
+				self.Slots = slotsMap
 				if self.Debug {
-					self.slotMutex.RLock()
-					slotLen := len(self.Slots)
-					self.slotMutex.RUnlock()
-					fmt.Println("[RedisCluster] MOVED newaddr: ", newaddr, "new slot: ", newslot, "my slots len: ", slotLen)
+					fmt.Println("[RedisCluster] MOVED newaddr: ", newaddr, "new slot: ", newslot, "my slots len: ", len(self.Slots))
 				}
 			}
 		} else {
@@ -416,14 +440,10 @@ func (self *RedisCluster) SendClusterCommand(flush bool, cmd string, args ...int
 	return nil, errors.New("could not complete command")
 }
 
-func (self *RedisCluster) Do(cmd string, args ...interface{}) (reply interface{}, err error) {
-	return self.SendClusterCommand(true, cmd, args...)
-}
-
-func (self *RedisCluster) Send(cmd string, args ...interface{}) (err error) {
-	_, err = self.SendClusterCommand(false, cmd, args...)
-	return err
-}
+//func (self *RedisCluster) Send(cmd string, args ...interface{}) (err error) {
+//	_, err = self.SendClusterCommand(false, cmd, args...)
+//	return err
+//}
 
 func (self *RedisCluster) SetRefreshNeeded() {
 	self.RefreshTableASAP = true
@@ -444,7 +464,7 @@ func (self *RedisCluster) HandleForKey(key string) *RedisHandle {
 
 type RedisClusterAccess interface {
 	Do(commandName string, args ...interface{}) (reply interface{}, err error)
-	Send(cmd string, args ...interface{}) (err error)
+	//	Send(cmd string, args ...interface{}) (err error)
 	SetRefreshNeeded()
 	HandleForKey(key string) *RedisHandle
 }
@@ -455,9 +475,9 @@ func Do(commandName string, args ...interface{}) (reply interface{}, err error) 
 	return Instance.Do(commandName, args...)
 }
 
-func Send(cmd string, args ...interface{}) (err error) {
-	return Instance.Send(cmd, args...)
-}
+//func Send(cmd string, args ...interface{}) (err error) {
+//	return Instance.Send(cmd, args...)
+//}
 
 func SetRefreshNeeded() {
 	Instance.SetRefreshNeeded()
